@@ -12,7 +12,7 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
 
     classes = classes['class'].unique()
 
-    # create generator
+    # create subgragps for each class
     subgraph_dic = {}
     for i in classes:
         sub_nodes = (
@@ -24,11 +24,17 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
         subgraph = G.subgraph(sub_nodes)
         subgraph_dic.update({i: subgraph})
 
+    # calculate degree for nodes in subgraphs
     sub_deg_df = pd.DataFrame()
     for k, v in subgraph_dic.items():
         sub_deg = v.degree()
         sub_deg_df = sub_deg_df.append(pd.DataFrame(sub_deg, columns=['node', 'class_degree']))
 
+    # calculate scores, out of class degree for each nodes equals
+    # to degree in main graph subtract from degree in subgraph
+    # score equals to degree in subgraph subtract from degree in man graph
+    # out = degree - class_degree, score = class_degree - out
+    # score = class_degree - degree + class_degree = 2 class_degree - degree
     degrees_df = degrees_df.merge(sub_deg_df, how='left', left_on='node', right_on='node')
     degrees_df['score'] = 2 * degrees_df['class_degree'] - degrees_df['degree']
     degrees_df.drop(['degree', 'class_degree'], axis=1, inplace=True)
