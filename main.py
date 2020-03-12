@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def calculate_scores(G: nx.Graph) -> pd.DataFrame:
-    degrees = G.degree()
+    degrees = G.degree(weight='weight')
 
     degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -27,7 +27,7 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
     # calculate degree for nodes in subgraphs
     sub_deg_df = pd.DataFrame()
     for k, v in subgraph_dic.items():
-        sub_deg = v.degree()
+        sub_deg = v.degree(weight='weight')
         sub_deg_df = sub_deg_df.append(pd.DataFrame(sub_deg, columns=['node', 'class_degree']))
 
     # calculate scores, out of class degree for each nodes equals
@@ -71,7 +71,7 @@ def main():
     nodes = pd.read_csv(r'data/nodes.csv')
     node_dict = dict(zip(nodes['node'], nodes['class']))
 
-    G = nx.from_pandas_edgelist(edges)
+    G = nx.from_pandas_edgelist(edges, source='source', target='target', edge_attr='weight')
     nx.set_node_attributes(G, node_dict, 'label')
 
     scores_df = calculate_scores(G)
