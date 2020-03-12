@@ -1,6 +1,15 @@
 import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics.pairwise import cosine_similarity
+
+import numpy as np
+
+from config import config
+
+from database_manager import DataBase
 
 
 def calculate_scores(G: nx.Graph) -> pd.DataFrame:
@@ -67,24 +76,48 @@ def fit_nodes(scores_df: pd.DataFrame, test_edges: pd.DataFrame) -> pd.DataFrame
 
 
 def main():
-    edges = pd.read_csv(r'data/edges.csv')
-    nodes = pd.read_csv(r'data/nodes.csv')
-    node_dict = dict(zip(nodes['node'], nodes['class']))
+    db = DataBase()
+    connection_string = config['connection_string']
 
-    G = nx.from_pandas_edgelist(edges, source='source', target='target', edge_attr='weight')
+    with open(r'query/select_iris.sql', 'r')as file:
+        query = file.read()
+
+    data = db._select(query, connection_string)
+    data['id'] = data['id'].astype(int)
+    data['sepal_length'] = data['sepal_length'].astype(float)
+    data['sepal_width'] = data['sepal_width'].astype(float)
+    data['petal_length'] = data['petal_length'].astype(float)
+    data['petal_width'] = data['petal_width'].astype(float)
+
+    node_dict = dict(zip(data['id'], data['class']))
+
+    similarities = cosine_similarity(data.drop(['id', 'class'], axis=1).values)
+    sim_mat = np.matrix(similarities)
+
+    G = nx.from_numpy_matrix(sim_mat)
+    G.remove_edges_from(nx.selfloop_edges(G))
+
+    # edges = pd.read_csv(r'data/edges.csv')
+    # nodes = pd.read_csv(r'data/nodes.csv')
+    # node_dict = dict(zip(nodes['node'], nodes['class']))
+
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+    # G = nx.from_pandas_edgelist(edges, source='source', target='target', edge_attr='weight')
+
     nx.set_node_attributes(G, node_dict, 'label')
 
     scores_df = calculate_scores(G)
-
-    test_edges = pd.read_csv(r'data/test_edges.csv')
-    test_nodes = pd.read_csv(r'data/test_nodes.csv')
-
-    test_labels = fit_nodes(scores_df, test_edges)
-
-    test_labels = test_labels.merge(test_nodes, how='left', left_on='node', right_on='node')
-
-    # nx.draw(subgraph)
-    # plt.show()
+    #
+    # test_edges = pd.read_csv(r'data/test_edges.csv')
+    # test_nodes = pd.read_csv(r'data/test_nodes.csv')
+    #
+    # test_labels = fit_nodes(scores_df, test_edges)
+    #
+    # test_labels = test_labels.merge(test_nodes, how='left', left_on='node', right_on='node')
+    #
+    # # nx.draw(subgraph)
+    # # plt.show()
 
     print('done')
 
