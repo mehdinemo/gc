@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics.pairwise import cosine_similarity
+import scipy
 
 import numpy as np
 
@@ -89,12 +90,21 @@ def main():
     data['petal_length'] = data['petal_length'].astype(float)
     data['petal_width'] = data['petal_width'].astype(float)
 
-    node_dict = dict(zip(data['id'], data['class']))
+    data.set_index('id', inplace=True)
 
-    similarities = cosine_similarity(data.drop(['id', 'class'], axis=1).values)
+    X_train, X_test, y_train, y_test = train_test_split(
+        data[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']], data['class'], test_size=0.25)
+
+    node_dict = dict(zip(X_train.index, y_train))
+
+    similarities = cosine_similarity(X_train)
     sim_mat = np.matrix(similarities)
 
     G = nx.from_numpy_matrix(sim_mat)
+
+    mapping = dict(zip(range(0, X_train.shape[0]), X_train.index))
+    G = nx.relabel_nodes(G, mapping)
+
     G.remove_edges_from(nx.selfloop_edges(G))
 
     # edges = pd.read_csv(r'data/edges.csv')
@@ -108,7 +118,13 @@ def main():
     nx.set_node_attributes(G, node_dict, 'label')
 
     scores_df = calculate_scores(G)
-    #
+
+    test_train_sim = cosine_similarity(X_test, X_train)
+    test_train_sim = pd.DataFrame(test_train_sim)
+    test_train_sim.set_index(X_test.index, inplace=True)
+    test_train_sim.columns = X_train.index
+
+
     # test_edges = pd.read_csv(r'data/test_edges.csv')
     # test_nodes = pd.read_csv(r'data/test_nodes.csv')
     #
