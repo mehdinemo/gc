@@ -48,6 +48,23 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
     return degrees_df
 
 
+def fit_nodes(test_train_sim, scores):
+    scores.drop(['node'], axis=1, inplace=True)
+    predict = []
+    for index, row in test_train_sim.iterrows():
+        scores['score_sim'] = scores['score'] * row
+        n_score = scores.groupby(by=['class'])['score_sim'].sum()
+
+        duplicated_labels = n_score.duplicated(False)
+        if True in duplicated_labels.values:
+            n_label = None
+        else:
+            n_label = n_score.idxmax()
+        predict.append(n_label)
+
+    return predict
+
+
 def prepare_data():
     # Dataset
     iris = datasets.load_iris()
@@ -85,6 +102,12 @@ def prepare_data():
     nx.set_node_attributes(G, node_dic, 'label')
 
     scores_df = calculate_scores(G)
+
+    test_train_dis = euclidean_distances(X_test, X_train)
+    test_train_sim = 1 / (1 + test_train_dis)
+    test_train_sim = pd.DataFrame(test_train_sim)
+
+    test_predict = fit_nodes(test_train_sim, scores_df)
 
     print('done')
 
