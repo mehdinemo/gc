@@ -12,14 +12,14 @@ from sklearn.metrics import classification_report
 
 def calculate_scores(G: nx.Graph) -> pd.DataFrame:
     # degree
-    # degrees = G.degree(weight='weight')
-    # degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
+    degrees = G.degree(weight='weight')
+    degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
 
     # closeness
-    closeness = nx.closeness_centrality(G, distance='weight')
-    degrees_df = pd.DataFrame.from_dict(closeness, orient='index')
-    degrees_df.reset_index(inplace=True)
-    degrees_df.columns = ['node', 'degree']
+    # closeness = nx.closeness_centrality(G, distance='weight')
+    # degrees_df = pd.DataFrame.from_dict(closeness, orient='index')
+    # degrees_df.reset_index(inplace=True)
+    # degrees_df.columns = ['node', 'degree']
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
     degrees_df = degrees_df.merge(classes, how='left', left_on='node', right_on='node')
@@ -42,14 +42,14 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
     sub_deg_df = pd.DataFrame()
     for k, v in subgraph_dic.items():
         # degree
-        # sub_deg = v.degree(weight='weight')
-        # sub_deg = pd.DataFrame(sub_deg, columns=['node', 'class_degree'])
+        sub_deg = v.degree(weight='weight')
+        sub_deg = pd.DataFrame(sub_deg, columns=['node', 'class_degree'])
 
         # closeness
-        sub_deg = nx.closeness_centrality(v, distance='weight')
-        sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
-        sub_deg.reset_index(inplace=True)
-        sub_deg.columns = ['node', 'class_degree']
+        # sub_deg = nx.closeness_centrality(v, distance='weight')
+        # sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
+        # sub_deg.reset_index(inplace=True)
+        # sub_deg.columns = ['node', 'class_degree']
 
         sub_deg_df = sub_deg_df.append(sub_deg)
 
@@ -148,7 +148,7 @@ def prepare_data():
     nx.set_node_attributes(G, node_dic, 'label')
 
     scores = calculate_scores(G)
-    train_predict = fit_nodes2(sim, scores, 5)
+    train_predict = fit_nodes2(sim, scores, 15)
 
     acc = classification_report(labels, train_predict)
     print(acc)
