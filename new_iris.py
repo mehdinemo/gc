@@ -8,18 +8,26 @@ from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from sklearn.model_selection import train_test_split
 import networkx as nx
 from sklearn.metrics import classification_report
+from sklearn import svm
+from tqdm import tqdm
 
 
 def calculate_scores(G: nx.Graph) -> pd.DataFrame:
     # degree
-    degrees = G.degree(weight='weight')
-    degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
+    # degrees = G.degree(weight='weight')
+    # degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
 
     # closeness
-    # closeness = nx.closeness_centrality(G, distance='weight')
-    # degrees_df = pd.DataFrame.from_dict(closeness, orient='index')
+    # degrees_df = nx.closeness_centrality(G, distance='weight')
+    # degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
     # degrees_df.reset_index(inplace=True)
     # degrees_df.columns = ['node', 'degree']
+
+    # eig
+    degrees_df = nx.eigenvector_centrality(G, weight='weight')
+    degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
+    degrees_df.reset_index(inplace=True)
+    degrees_df.columns = ['node', 'degree']
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
     degrees_df = degrees_df.merge(classes, how='left', left_on='node', right_on='node')
@@ -47,6 +55,12 @@ def calculate_scores(G: nx.Graph) -> pd.DataFrame:
 
         # closeness
         # sub_deg = nx.closeness_centrality(v, distance='weight')
+        # sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
+        # sub_deg.reset_index(inplace=True)
+        # sub_deg.columns = ['node', 'class_degree']
+
+        # eig
+        # sub_deg = nx.eigenvector_centrality(v, weight='weight')
         # sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
         # sub_deg.reset_index(inplace=True)
         # sub_deg.columns = ['node', 'class_degree']
@@ -140,6 +154,13 @@ def prepare_data():
 
     datapoints = PCAdf.values
 
+    # svm
+    # clf = svm.SVC(decision_function_shape='ovo')
+    # clf.fit(datapoints, labels)
+    # pred = clf.predict(datapoints)
+    # acc = classification_report(labels, pred)
+    # print(acc)
+
     dis = euclidean_distances(datapoints)
     sim = 1 / (1 + dis)
     G = nx.from_numpy_matrix(sim)
@@ -148,30 +169,39 @@ def prepare_data():
     nx.set_node_attributes(G, node_dic, 'label')
 
     scores = calculate_scores(G)
-    train_predict = fit_nodes2(sim, scores, 15)
 
-    acc = classification_report(labels, train_predict)
-    print(acc)
+    accuracy = pd.DataFrame()
+    n_range = [5, 10, 15, 20, 25]
+    for n in tqdm(n_range):
+        train_predict = fit_nodes2(sim, scores.copy(), n)
+        acc = classification_report(labels, train_predict, output_dict=True)
+        # acc.update({'n': {'precision': n, 'recall': n, 'f1-score': n, 'support': n}})
+        acc = pd.DataFrame(acc)
+        acc = acc.T
+        acc['n'] = n
+        accuracy = accuracy.append(acc)
+
+    accuracy.to_csv('data/accuracy.csv')
     # select test and train
-    X_train, X_test, y_train, y_test = train_test_split(datapoints, labels, test_size=0.25)
+    # X_train, X_test, y_train, y_test = train_test_split(datapoints, labels, test_size=0.25)
 
     # distance and similarity
-    dis_train = euclidean_distances(X_train)
-    sim_train = 1 / (1 + dis_train)
-
-    # build graph for train data
-    G_train = nx.from_numpy_matrix(sim_train)
-    G_train.remove_edges_from(nx.selfloop_edges(G_train))
-
-    train_node_dic = dict(zip(range(0, len(X_train)), y_train))
-    nx.set_node_attributes(G_train, train_node_dic, 'label')
-
-    scores_train = calculate_scores(G_train)
-
-    test_train_dis = euclidean_distances(X_test, X_train)
-    test_train_sim = 1 / (1 + test_train_dis)
-
-    test_predict = fit_nodes(test_train_sim, scores_train)
+    # dis_train = euclidean_distances(X_train)
+    # sim_train = 1 / (1 + dis_train)
+    #
+    # # build graph for train data
+    # G_train = nx.from_numpy_matrix(sim_train)
+    # G_train.remove_edges_from(nx.selfloop_edges(G_train))
+    #
+    # train_node_dic = dict(zip(range(0, len(X_train)), y_train))
+    # nx.set_node_attributes(G_train, train_node_dic, 'label')
+    #
+    # scores_train = calculate_scores(G_train)
+    #
+    # test_train_dis = euclidean_distances(X_test, X_train)
+    # test_train_sim = 1 / (1 + test_train_dis)
+    #
+    # test_predict = fit_nodes(test_train_sim, scores_train)
 
     print('done')
 
