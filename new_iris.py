@@ -1,27 +1,69 @@
 # Imports
 import math
 import pandas as pd
-import numpy as np
-from sklearn import datasets
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from sklearn.model_selection import train_test_split
 import networkx as nx
 from sklearn.metrics import classification_report
 from sklearn import svm
 from tqdm import tqdm
+from config import config
+from database_manager import DataBase
+from tqdm import tqdm
+
+
+def load_iris():
+    from sklearn import datasets
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import MinMaxScaler
+
+    # Dataset
+    iris = datasets.load_iris()
+    data = pd.DataFrame(iris.data, columns=iris.feature_names)
+
+    target = iris.target_names
+    labels = iris.target
+
+    # Scaling
+    scaler = MinMaxScaler()
+    data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
+    # PCA Transformation
+    pca = PCA(n_components=3)
+    principalComponents = pca.fit_transform(data)
+    PCAdf = pd.DataFrame(data=principalComponents,
+                         columns=['principal component 1', 'principal component 2', 'principal component 3'])
+
+    datapoints = PCAdf.values
+
+    results = {'data': datapoints, 'labels': labels}
+    return results
+
+
+def create_graph(datapoints, labels) -> nx.Graph:
+    dis = euclidean_distances(datapoints)
+    sim = 1 / (1 + dis)
+    G = nx.from_numpy_matrix(sim)
+    G.remove_edges_from(nx.selfloop_edges(G))
+    node_dic = dict(zip(range(0, len(datapoints)), labels))
+    nx.set_node_attributes(G, node_dic, 'label')
+
+    return G
 
 
 def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
     if method == 'degree':
+        print('creating degree of graph...')
         degrees = G.degree(weight='weight')
         degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
+        print('degree created')
     else:
         if method == 'closeness':
             degrees_df = nx.closeness_centrality(G, distance='weight')
         elif method == 'eig':
+            print('crating eigenvector_centrality for graph...')
             degrees_df = nx.eigenvector_centrality(G, weight='weight')
+            print('eigenvector_centrality created')
         elif method == 'katz':
             degrees_df = nx.katz_centrality(G, weight='weight')
         degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
@@ -34,8 +76,9 @@ def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
     classes = classes['class'].unique()
 
     # create subgragps for each class
+    print('create subgragps for each class...')
     subgraph_dic = {}
-    for i in classes:
+    for i in tqdm(classes):
         sub_nodes = (
             node
             for node, data
@@ -46,8 +89,9 @@ def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
         subgraph_dic.update({i: subgraph})
 
     # calculate degree for nodes in subgraphs
+    print('calculate degree for nodes in subgraphs...')
     sub_deg_df = pd.DataFrame()
-    for k, v in subgraph_dic.items():
+    for k, v in tqdm(subgraph_dic.items(), total=len(subgraph_dic)):
         if sub_method == 'degree':
             sub_deg = v.degree(weight='weight')
             sub_deg = pd.DataFrame(sub_deg, columns=['node', 'class_degree'])
@@ -74,31 +118,14 @@ def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
     return degrees_df
 
 
-def fit_nodes(test_train_sim, scores):
-    test_train_sim = pd.DataFrame(test_train_sim)
-    scores.drop(['node'], axis=1, inplace=True)
-    predict = []
-    for index, row in test_train_sim.iterrows():
-        scores['score_sim'] = scores['score'] * row
-        n_score = scores.groupby(by=['class'])['score_sim'].sum()
-
-        duplicated_labels = n_score.duplicated(False)
-        if True in duplicated_labels.values:
-            n_label = None
-        else:
-            n_label = n_score.idxmax()
-        predict.append(n_label)
-
-    return predict
-
-
-def fit_nodes2(test_train_sim, scores, n_select, drop_index):
+def fit_nodes(test_train_sim, scores, n_select, drop_index):
     test_train_sim = pd.DataFrame(test_train_sim)
     scores.drop(['node'], axis=1, inplace=True)
     classes = scores['class'].unique()
 
     predict = []
-    for index, row in test_train_sim.iterrows():
+    print('fit nodes...')
+    for index, row in tqdm(test_train_sim.iterrows(), total=test_train_sim.shape[0]):
         if drop_index:
             new_scores = scores.drop(index)
         else:
@@ -127,25 +154,10 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
     return predict
 
 
-def prepare_data():
-    # Dataset
-    iris = datasets.load_iris()
-    data = pd.DataFrame(iris.data, columns=iris.feature_names)
-
-    target = iris.target_names
-    labels = iris.target
-
-    # Scaling
-    scaler = MinMaxScaler()
-    data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
-
-    # PCA Transformation
-    pca = PCA(n_components=3)
-    principalComponents = pca.fit_transform(data)
-    PCAdf = pd.DataFrame(data=principalComponents,
-                         columns=['principal component 1', 'principal component 2', 'principal component 3'])
-
-    datapoints = PCAdf.values
+def iris_classification():
+    res = load_iris()
+    datapoints = res['data']
+    labels = res['labels']
 
     # svm
     # clf = svm.SVC(decision_function_shape='ovo')
@@ -154,43 +166,30 @@ def prepare_data():
     # acc = classification_report(labels, pred)
     # print(acc)
 
-    dis = euclidean_distances(datapoints)
-    sim = 1 / (1 + dis)
-    G = nx.from_numpy_matrix(sim)
-    G.remove_edges_from(nx.selfloop_edges(G))
-    node_dic = dict(zip(range(0, len(datapoints)), labels))
-    nx.set_node_attributes(G, node_dic, 'label')
+    G = create_graph(datapoints, labels)
+    sim = nx.to_numpy_array(G)
 
     method = 'eig'
     sub_method = 'degree'
-    # scores = calculate_scores(G, method, sub_method)
+    scores = calculate_scores(G, method, sub_method)
 
-    # accuracy = pd.DataFrame()
-    # n_range = [5, 10, 15, 20, 25]
-    # for n in tqdm(n_range):
-    #     train_predict = fit_nodes2(sim, scores.copy(), n, True)
-    #     acc = classification_report(labels, train_predict, output_dict=True)
-    #     # acc.update({'n': {'precision': n, 'recall': n, 'f1-score': n, 'support': n}})
-    #     acc = pd.DataFrame(acc)
-    #     acc = acc.T
-    #     acc['n'] = n
-    #     accuracy = accuracy.append(acc)
-    #
+    accuracy = pd.DataFrame()
+    n_range = [5, 10, 15, 20, 25]
+    for n in tqdm(n_range):
+        train_predict = fit_nodes(sim, scores.copy(), n, True)
+        acc = classification_report(labels, train_predict, output_dict=True)
+        acc = pd.DataFrame(acc)
+        acc = acc.T
+        acc['n'] = n
+        accuracy = accuracy.append(acc)
+
     # accuracy.to_csv('data/accuracy.csv')
 
     # select test and train
     X_train, X_test, y_train, y_test = train_test_split(datapoints, labels, test_size=0.7)
 
-    # distance and similarity
-    dis_train = euclidean_distances(X_train)
-    sim_train = 1 / (1 + dis_train)
-
     # build graph for train data
-    G_train = nx.from_numpy_matrix(sim_train)
-    G_train.remove_edges_from(nx.selfloop_edges(G_train))
-
-    train_node_dic = dict(zip(range(0, len(X_train)), y_train))
-    nx.set_node_attributes(G_train, train_node_dic, 'label')
+    G_train = create_graph(X_train, y_train)
 
     scores_train = calculate_scores(G_train, method, sub_method)
 
@@ -198,22 +197,49 @@ def prepare_data():
     test_train_sim = 1 / (1 + test_train_dis)
 
     n = math.ceil(0.1 * len(X_train))
-    test_predict = fit_nodes2(test_train_sim, scores_train.copy(), n, False)
+    test_predict = fit_nodes(test_train_sim, scores_train.copy(), n, False)
     acc = classification_report(y_test, test_predict, output_dict=False)
     print(acc)
 
-    # svm
-    clf = svm.SVC(decision_function_shape='ovo')
-    clf.fit(X_train, y_train)
-    pred = clf.predict(X_test)
-    acc = classification_report(y_test, pred)
-    print(acc)
-
-    print('done')
-
 
 def main():
-    prepare_data()
+    # iris_classification()
+
+    connection_string = config['connection_string']
+    db = DataBase()
+    with open(r'query/tweet_graph.sql')as file:
+        query_string = file.read()
+
+    print('select data from db...')
+    data = db._select(query_string, connection_string)
+    print('data loaded')
+
+    print('creating graph...')
+    G = nx.from_pandas_edgelist(data, source='source', target='target', edge_attr='weight')
+    print('graph created')
+
+    del data
+    G.remove_edges_from(nx.selfloop_edges(G))
+
+    train = pd.read_csv(r'data/train.csv')
+    node_dic = dict(zip(train['id'], train['target']))
+    nx.set_node_attributes(G, node_dic, 'label')
+
+    sim = nx.to_numpy_array(G)
+
+    # shoud check indexes
+
+    method = 'degree'
+    sub_method = 'degree'
+    print('calculate scores...')
+    scores = calculate_scores(G, method, sub_method)
+    print('scores created')
+
+    labels = nx.get_node_attributes(G, 'label')
+    n = math.ceil(0.1 * len(G))
+    test_predict = fit_nodes(sim, scores, n, False)
+    acc = classification_report(labels, test_predict, output_dict=False)
+    print(acc)
 
     print('done')
 
