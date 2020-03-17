@@ -112,6 +112,7 @@ def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
     degrees_df['score'] = degrees_df['degree'] - degrees_df['class_degree']
     degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
+    degrees_df.to_csv(r'data/degrees_df.csv')
     degrees_df.drop(['degree', 'class_degree'], axis=1, inplace=True)
 
     return degrees_df
@@ -139,8 +140,14 @@ def fit_nodes(test_train_sim, scores, n_select, drop_index):
         top_ind = tops.merge(row, how='left', left_index=True, right_index=True)
         bott_ind = botts.merge(row, how='left', left_index=True, right_index=True)
 
-        top_ind = top_ind.groupby(['class'])[index].mean()
-        bott_ind = bott_ind.groupby(['class'])[index].mean()
+        top_ind['score'] = top_ind['score'] * top_ind[index]
+        bott_ind['score'] = bott_ind['score'] * bott_ind[index]
+
+        top_ind = top_ind[top_ind['score'] != 0]
+        bott_ind = bott_ind[bott_ind['score'] != 0]
+
+        top_ind = top_ind.groupby(['class'])['score'].mean()
+        bott_ind = bott_ind.groupby(['class'])['score'].mean()
 
         n_score = 2 * bott_ind - top_ind
 
@@ -257,13 +264,16 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
             new_scores = scores.drop(index)
         else:
             new_scores = scores.copy()
+
         top_ind = new_scores.merge(row, how='left', left_index=True, right_index=True)
         # bott_ind = new_scores.merge(row, how='left', left_index=True, right_index=True)
 
-        top_ind = top_ind.groupby(['class'])[index].mean()
+        top_ind['score'] = top_ind['score'] * top_ind[index]
+        top_ind = top_ind.groupby(['class'])['score'].sum()
         # bott_ind = bott_ind.groupby(['class'])[index].mean()
 
         # n_score = 2 * bott_ind - top_ind
+
         n_score = top_ind
         duplicated_labels = n_score.duplicated(False)
         if True in duplicated_labels.values:
@@ -308,19 +318,19 @@ def main():
     sim.index = all_nodes
     sim.columns = all_nodes
 
-    method = 'closeness'
-    sub_method = 'degree'
-    print('calculate scores...')
-    # scores = calculate_scores(G, method, sub_method)
-    scores = scores_degree(G)
-    print('scores created')
-
-    labels = nx.get_node_attributes(G, 'label')
-    n = math.ceil(0.1 * len(G))
-    test_predict = fit_nodes2(sim, scores, n, True)
-    test_predict = pd.Series(test_predict).fillna(-1)
-    acc = classification_report(list(labels.values()), test_predict, output_dict=False)
-    print(acc)
+    # method = 'closeness'
+    # sub_method = 'degree'
+    # print('calculate scores...')
+    # # scores = calculate_scores(G, method, sub_method)
+    # scores = scores_degree(G)
+    # print('scores created')
+    #
+    # labels = nx.get_node_attributes(G, 'label')
+    # n = math.ceil(0.1 * len(G))
+    # test_predict = fit_nodes2(sim, scores, n, True)
+    # test_predict = pd.Series(test_predict).fillna(-1)
+    # acc = classification_report(list(labels.values()), test_predict, output_dict=False)
+    # print(acc)
 
     # select test and train
     data = train[train['id'].isin(all_nodes)]
@@ -329,20 +339,21 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(data['id'], data['target'], random_state=0)
 
     G_train = G.subgraph(X_train)
-    G_test = G.subgraph(X_test)
+    # G_test = G.subgraph(X_test)
 
-    method = 'closeness'
+    method = 'eig'
     sub_method = 'degree'
 
     print('calculate scores...')
-    # scores = calculate_scores(G, method, sub_method)
-    scores_train = scores_degree(G_train)
+    scores_train = calculate_scores(G_train, method, sub_method)
+    # scores_train = pd.read_csv(r'data/scores_train.csv')
+    # scores_train = scores_degree(G_train)
     print('scores created')
 
     sim_test_train = sim.drop(X_train)
     sim_test_train.drop(columns=X_test, axis=1, inplace=True)
-    n = math.ceil(0.1 * len(G_train))
-    test_predict = fit_nodes2(sim_test_train, scores_train, n, False)
+    n = math.ceil(0.2 * len(G_train))
+    test_predict = fit_nodes(sim_test_train, scores_train.copy(), n, False)
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(y_test, test_predict, output_dict=False)
     print(acc)
