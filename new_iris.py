@@ -152,10 +152,13 @@ def fit_nodes(test_train_sim, scores, n_select, drop_index):
         n_score = 2 * bott_ind - top_ind
 
         duplicated_labels = n_score.duplicated(False)
-        if True in duplicated_labels.values:
+        if (True in duplicated_labels.values) or (len(n_score) == 0):
             n_label = None
         else:
-            n_label = n_score.idxmax()
+            try:
+                n_label = n_score.idxmax()
+            except Exception as ex:
+                print(ex)
         predict.append(n_label)
 
     return predict
@@ -209,10 +212,23 @@ def iris_classification():
     print(acc)
 
 
+def change_confidence(row):
+    if row['class'] == 0:
+        row['confidence'] = 1 - row['confidence']
+        row['class_confidence'] = 1 - row['class_confidence']
+
+    return row
+
+
 def scores_degree(G: nx.Graph) -> pd.DataFrame:
     print('creating degree of graph...')
-    degrees = G.degree(weight='weight')
-    degrees_df = pd.DataFrame(degrees, columns=['node', 'degree'])
+    degrees_weight = G.degree(weight='weight')
+    degrees_degree = G.degree()
+    degrees_weight = pd.DataFrame(degrees_weight, columns=['node', 'weight'])
+    degrees_degree = pd.DataFrame(degrees_degree, columns=['node', 'degree'])
+    degrees_df = degrees_weight.merge(degrees_degree, how='inner', left_on='node', right_on='node')
+    degrees_df['confidence'] = degrees_df['weight'] / degrees_df['degree']
+
     print('degree created')
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -237,13 +253,22 @@ def scores_degree(G: nx.Graph) -> pd.DataFrame:
     print('calculate degree for nodes in subgraphs...')
     sub_deg_df = pd.DataFrame()
     for k, v in tqdm(subgraph_dic.items(), total=len(subgraph_dic)):
-        sub_deg = v.degree(weight='weight')
-        sub_deg = pd.DataFrame(sub_deg, columns=['node', 'class_degree'])
+        sub_deg_weight = v.degree(weight='weight')
+        sub_deg_degree = v.degree()
+        sub_deg_weight = pd.DataFrame(sub_deg_weight, columns=['node', 'class_weight'])
+        sub_deg_degree = pd.DataFrame(sub_deg_degree, columns=['node', 'class_degree'])
+
+        sub_deg = sub_deg_weight.merge(sub_deg_degree, how='inner', left_on='node', right_on='node')
+        sub_deg['class_confidence'] = sub_deg['class_weight'] / sub_deg['class_degree']
+
         sub_deg_df = sub_deg_df.append(sub_deg)
 
     degrees_df = degrees_df.merge(sub_deg_df, how='left', left_on='node', right_on='node')
 
-    degrees_df['score'] = 2 * degrees_df['class_degree'] - degrees_df['degree']
+    degrees_df = degrees_df.apply(change_confidence, axis=1)
+    degrees_df['degree_relative'] = degrees_df['class_degree'] / degrees_df['degree']
+    degrees_df['score'] = degrees_df['class_confidence'] - degrees_df['confidence']
+    degrees_df.to_csv(r'data/degrees_df.csv', index=False)
     degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
     degrees_df.drop(['degree', 'class_degree'], axis=1, inplace=True)
@@ -269,6 +294,7 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
         # bott_ind = new_scores.merge(row, how='left', left_index=True, right_index=True)
 
         top_ind['score'] = top_ind['score'] * top_ind[index]
+        top_ind = top_ind[top_ind['score'] != 0]
         top_ind = top_ind.groupby(['class'])['score'].sum()
         # bott_ind = bott_ind.groupby(['class'])[index].mean()
 
@@ -276,7 +302,7 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
 
         n_score = top_ind
         duplicated_labels = n_score.duplicated(False)
-        if True in duplicated_labels.values:
+        if (True in duplicated_labels.values) or (len(n_score) == 0):
             n_label = None
         else:
             n_label = n_score.idxmax()
@@ -288,22 +314,21 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
 def main():
     # iris_classification()
 
-    connection_string = config['connection_string']
-    db = DataBase()
-    with open(r'query/tweet_graph.sql')as file:
-        query_string = file.read()
+    # connection_string = config['connection_string']
+    # db = DataBase()
+    # with open(r'query/tweet_graph.sql')as file:
+    #     query_string = file.read()
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
-    data = pd.read_csv(r'data/graph.csv')
+    data = pd.read_csv(r'data/graph_confidence.csv')
     print('data loaded')
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(data, source='source', target='target', edge_attr='weight')
-    print('graph created')
-
     del data
     G.remove_edges_from(nx.selfloop_edges(G))
+    print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
     train = pd.read_csv(r'data/train.csv')
 
@@ -317,6 +342,7 @@ def main():
     sim = pd.DataFrame(sim)
     sim.index = all_nodes
     sim.columns = all_nodes
+    sim.to_csv(r'data/sim_all.csv')
 
     # method = 'closeness'
     # sub_method = 'degree'
@@ -345,15 +371,27 @@ def main():
     sub_method = 'degree'
 
     print('calculate scores...')
-    scores_train = calculate_scores(G_train, method, sub_method)
+    # scores_train = calculate_scores(G_train, method, sub_method)
     # scores_train = pd.read_csv(r'data/scores_train.csv')
-    # scores_train = scores_degree(G_train)
+
+    # degrees_df = pd.read_csv(r'data/degrees_df.csv')
+    # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].max()
+    # max_0 = degrees_df[degrees_df['class'] == 0]['class_degree'].max()
+    # max_1 = degrees_df[degrees_df['class'] == 1]['class_degree'].max()
+    # degrees_df['normal_class_degree'] = degrees_df.apply(
+    #     lambda x: x['class_degree'] / max_0 if x['class'] == 0 else x['class_degree'] / max_1, axis=1)
+    # degrees_df['score'] = degrees_df['degree'] - degrees_df['normal_class_degree']
+    # degrees_df.drop(['normal_class_degree', 'degree', 'class_degree'], axis=1, inplace=True)
+    # scores_train = degrees_df.copy()
+
+    scores_train = scores_degree(G_train)
+
     print('scores created')
 
     sim_test_train = sim.drop(X_train)
     sim_test_train.drop(columns=X_test, axis=1, inplace=True)
     n = math.ceil(0.2 * len(G_train))
-    test_predict = fit_nodes(sim_test_train, scores_train.copy(), n, False)
+    test_predict = fit_nodes2(sim_test_train, scores_train.copy(), n, False)
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(y_test, test_predict, output_dict=False)
     print(acc)
