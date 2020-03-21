@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0a950051-3ab8-41c4-8605-ab6e0f6834db" name="Default Changelist" comment="" />
+    <list default="true" id="0a950051-3ab8-41c4-8605-ab6e0f6834db" name="Default Changelist" comment="define graph and subgraph method">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/initial.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/initial.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/degrees_df.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/degrees_df.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graph.csv" beforeDir="false" afterPath="$PROJECT_DIR$/data/graph.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/new_iris.py" beforeDir="false" afterPath="$PROJECT_DIR$/new_iris.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,6 +22,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1Yybt6fXtuHSTZ4eMhyqOPkgp0h" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -22,9 +33,12 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../towardsdatascience_text_classification" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.new_iris">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="initial" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -47,8 +61,31 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="new_iris" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="initial" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/new_iris.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.new_iris" />
         <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
@@ -76,13 +113,98 @@
       <option name="presentableId" value="Default" />
       <updated>1583917992685</updated>
       <workItem from="1583917996004" duration="6028000" />
+      <workItem from="1583949804005" duration="9520000" />
+      <workItem from="1584042216043" duration="7206000" />
+      <workItem from="1584087549474" duration="6072000" />
+      <workItem from="1584211610143" duration="10328000" />
+      <workItem from="1584274650610" duration="14553000" />
+      <workItem from="1584381195452" duration="9384000" />
+      <workItem from="1584457907712" duration="1033000" />
+      <workItem from="1584550199106" duration="9913000" />
+      <workItem from="1584608725092" duration="4204000" />
     </task>
+    <task id="LOCAL‎۰۰۰۰۱" summary="add fit function and test">
+      <created>1583959502737</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۱" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۱" />
+      <updated>1583959502737</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۲" summary="change node attribute from degree to weight">
+      <created>1584044388262</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۲" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۲" />
+      <updated>1584044388262</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۳" summary="add iris">
+      <created>1584050338578</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۳" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۳" />
+      <updated>1584050338578</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۴" summary="add iris from sklearn">
+      <created>1584219872851</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۴" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۴" />
+      <updated>1584219872851</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۵" summary="add fit_nodes">
+      <created>1584222082312</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۵" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۵" />
+      <updated>1584222082312</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۶" summary="top bott scores">
+      <created>1584286603734</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۶" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۶" />
+      <updated>1584286603734</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۷" summary="define graph and subgraph method">
+      <created>1584381455772</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۷" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۷" />
+      <updated>1584381455772</updated>
+    </task>
+    <task id="LOCAL‎۰۰۰۰۸" summary="graph approach for tweets">
+      <created>1584398426869</created>
+      <option name="number" value="LOCAL‎۰۰۰۰۸" />
+      <option name="presentableId" value="LOCAL‎۰۰۰۰۸" />
+      <updated>1584398426869</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="add fit function and test" />
+    <MESSAGE value="change node attribute from degree to weight" />
+    <MESSAGE value="add iris" />
+    <MESSAGE value="add iris from sklearn" />
+    <MESSAGE value="add fit_nodes" />
+    <MESSAGE value="top bott scores" />
+    <MESSAGE value="define graph and subgraph method" />
+    <MESSAGE value="graph approach for tweets" />
+    <option name="LAST_COMMIT_MESSAGE" value="graph approach for tweets" />
+  </component>
   <component name="WindowStateProjectService">
+    <state x="399" y="167" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1584394650345">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state x="399" y="167" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.728@0.0.1280.728" timestamp="1584394650345" />
+    <state x="359" y="0" key="#main" timestamp="1583949850498">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state x="359" y="0" key="#main/0.0.1280.728@0.0.1280.728" timestamp="1583949850498" />
+    <state x="265" y="0" key="CommitChangelistDialog2" timestamp="1584825073966">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state x="265" y="0" key="CommitChangelistDialog2/0.0.1280.728@0.0.1280.728" timestamp="1584825073966" />
+    <state x="420" y="119" key="FileChooserDialogImpl" timestamp="1584615212636">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state x="420" y="119" key="FileChooserDialogImpl/0.0.1280.728@0.0.1280.728" timestamp="1584615212636" />
     <state width="1237" height="246" key="GridCell.Tab.-1.bottom" timestamp="1583927593899">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
@@ -99,56 +221,96 @@
       <screen x="0" y="0" width="1280" height="728" />
     </state>
     <state width="1237" height="246" key="GridCell.Tab.-1.right/0.0.1280.728@0.0.1280.728" timestamp="1583927593899" />
-    <state width="1237" height="246" key="GridCell.Tab.0.bottom" timestamp="1583927593917">
+    <state width="1237" height="279" key="GridCell.Tab.0.bottom" timestamp="1584615219790">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.0.bottom/0.0.1280.728@0.0.1280.728" timestamp="1583927593917" />
-    <state width="1237" height="246" key="GridCell.Tab.0.center" timestamp="1583927593917">
+    <state width="1237" height="279" key="GridCell.Tab.0.bottom/0.0.1280.728@0.0.1280.728" timestamp="1584615219790" />
+    <state width="1237" height="279" key="GridCell.Tab.0.center" timestamp="1584615219789">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.0.center/0.0.1280.728@0.0.1280.728" timestamp="1583927593917" />
-    <state width="1237" height="246" key="GridCell.Tab.0.left" timestamp="1583927593917">
+    <state width="1237" height="279" key="GridCell.Tab.0.center/0.0.1280.728@0.0.1280.728" timestamp="1584615219789" />
+    <state width="1237" height="279" key="GridCell.Tab.0.left" timestamp="1584615219789">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.0.left/0.0.1280.728@0.0.1280.728" timestamp="1583927593917" />
-    <state width="1237" height="246" key="GridCell.Tab.0.right" timestamp="1583927593917">
+    <state width="1237" height="279" key="GridCell.Tab.0.left/0.0.1280.728@0.0.1280.728" timestamp="1584615219789" />
+    <state width="1237" height="279" key="GridCell.Tab.0.right" timestamp="1584615219790">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.0.right/0.0.1280.728@0.0.1280.728" timestamp="1583927593917" />
-    <state width="1237" height="246" key="GridCell.Tab.1.bottom" timestamp="1583927591171">
+    <state width="1237" height="279" key="GridCell.Tab.0.right/0.0.1280.728@0.0.1280.728" timestamp="1584615219790" />
+    <state width="1237" height="250" key="GridCell.Tab.1.bottom" timestamp="1584615219686">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.1.bottom/0.0.1280.728@0.0.1280.728" timestamp="1583927591171" />
-    <state width="1237" height="246" key="GridCell.Tab.1.center" timestamp="1583927591171">
+    <state width="1237" height="250" key="GridCell.Tab.1.bottom/0.0.1280.728@0.0.1280.728" timestamp="1584615219686" />
+    <state width="1237" height="250" key="GridCell.Tab.1.center" timestamp="1584615219686">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.1.center/0.0.1280.728@0.0.1280.728" timestamp="1583927591171" />
-    <state width="1237" height="246" key="GridCell.Tab.1.left" timestamp="1583927591170">
+    <state width="1237" height="250" key="GridCell.Tab.1.center/0.0.1280.728@0.0.1280.728" timestamp="1584615219686" />
+    <state width="1237" height="250" key="GridCell.Tab.1.left" timestamp="1584615219686">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.1.left/0.0.1280.728@0.0.1280.728" timestamp="1583927591170" />
-    <state width="1237" height="246" key="GridCell.Tab.1.right" timestamp="1583927591171">
+    <state width="1237" height="250" key="GridCell.Tab.1.left/0.0.1280.728@0.0.1280.728" timestamp="1584615219686" />
+    <state width="1237" height="250" key="GridCell.Tab.1.right" timestamp="1584615219686">
       <screen x="0" y="0" width="1280" height="728" />
     </state>
-    <state width="1237" height="246" key="GridCell.Tab.1.right/0.0.1280.728@0.0.1280.728" timestamp="1583927591171" />
+    <state width="1237" height="250" key="GridCell.Tab.1.right/0.0.1280.728@0.0.1280.728" timestamp="1584615219686" />
+    <state x="141" y="7" key="SettingsEditor" timestamp="1583949912965">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state x="141" y="7" key="SettingsEditor/0.0.1280.728@0.0.1280.728" timestamp="1583949912965" />
+    <state width="648" height="372" key="XDebugger.FullValuePopup" timestamp="1584281600738">
+      <screen x="0" y="0" width="1280" height="728" />
+    </state>
+    <state width="648" height="372" key="XDebugger.FullValuePopup/0.0.1280.728@0.0.1280.728" timestamp="1584281600738" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>11</line>
-          <option name="timeStamp" value="3" />
+          <line>84</line>
+          <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>19</line>
-          <option name="timeStamp" value="4" />
+          <line>83</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>70</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>6</line>
+          <option name="timeStamp" value="15" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>77</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/new_iris.py</url>
+          <line>396</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/new_iris.py</url>
+          <line>395</line>
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/new_iris.py</url>
+          <line>358</line>
+          <option name="timeStamp" value="34" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/gc$new_iris.coverage" NAME="new_iris Coverage Results" MODIFIED="1584611835615" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/initial$main.coverage" NAME="main Coverage Results" MODIFIED="1583927172425" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/gc$main.coverage" NAME="main Coverage Results" MODIFIED="1584212615602" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
