@@ -79,7 +79,7 @@ def fit_nodes(test_train_sim, scores, n_select, drop_index):
     classes = scores['class'].unique()
 
     predict = []
-    for index, row in tqdm(test_train_sim.iterrows(), total=test_train_sim.shape[0]):
+    for index, row in tqdm(test_train_sim.iterrows(),total=test_train_sim.shape[0]):
         if drop_index:
             new_scores = scores.drop(index)
         else:
