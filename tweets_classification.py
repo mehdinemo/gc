@@ -14,7 +14,7 @@ from tqdm import tqdm
 def jaccard_sim(data):
     nodes = data[data['source'] == data['target']].copy()
     nodes.drop(['target'], axis=1, inplace=True)
-    nodes.columns = ['node', 'node_weigh', 'node_conf']
+    nodes.columns = ['node', 'node_weigh']
 
     data = data.merge(nodes, how='left', left_on='source', right_on='node')
     data = data.merge(nodes, how='left', left_on='target', right_on='node')
@@ -151,11 +151,11 @@ def scores_degree2(G: nx.Graph, method: str, sub_method: str, weight: str) -> pd
 def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
     print(f'calculate degree for graph')
 
-    degrees_df = nx.eigenvector_centrality(G, weight=weight)
-    degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
-    degrees_df.reset_index(inplace=True)
-    degrees_df.columns = ['node', 'degree']
-
+    # degrees_df = nx.eigenvector_centrality(G, weight=weight)
+    # degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
+    # degrees_df.reset_index(inplace=True)
+    # degrees_df.columns = ['node', 'degree']
+    degrees_df = pd.read_csv('data/degrees_df.csv')
     print('graph degree calculated')
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -178,7 +178,8 @@ def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
     # calculate degree for nodes in subgraphs
     sub_deg_df = pd.DataFrame()
     for k, v in subgraph_dic.items():
-        sub_deg = nx.eigenvector_centrality(v, weight=weight)
+        print(f'calculate eigenvector_centrality for {k}')
+        sub_deg = nx.eigenvector_centrality(v, max_iter=200, weight=weight)
         sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
         sub_deg.reset_index(inplace=True)
         sub_deg.columns = ['node', 'class_degree']
@@ -268,13 +269,6 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
 
 
 def main():
-    # iris_classification()
-
-    # connection_string = config['connection_string']
-    # db = DataBase()
-    # with open(r'query/tweet_graph.sql')as file:
-    #     query_string = file.read()
-
     print('select data from db...')
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/graph.csv')
@@ -302,12 +296,12 @@ def main():
     sim.columns = all_nodes
     # sim.to_csv(r'data/sim_all.csv')
 
-    # print('calculate scores...')
-    # scores = scores_degree2(G, method, sub_method, 'jaccard_sim')
+    print('calculate scores...')
+    scores = scores_degree3(G, 'jaccard_sim')
     # scores = scores_degree(G)
-    # scores.to_csv(r'data/scores_tweet_eig_degree.csv')
+    scores.to_csv(r'data/scores_tweet_eig_degree.csv')
     # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
-    # print('scores created')
+    print('scores created')
 
     # labels = nx.get_node_attributes(G, 'label')
     # n = math.ceil(0.1 * len(G))
@@ -317,19 +311,19 @@ def main():
     # print(acc)
 
     # # select test and train
-    data = train[train['id'].isin(all_nodes)].copy()
-    data.drop(data.columns.difference(['id', 'target']), 1, inplace=True)
-
-    X_train, X_test, y_train, y_test = train_test_split(data['id'], data['target'], test_size=0.9)
-
-    G_train = G.subgraph(X_train)
-    # G_test = G.subgraph(X_test)
-
-    weight = 'jaccard_sim'
-
-    print('calculate scores...')
-    scores_train = scores_degree3(G_train, weight)
-    scores_train = pd.read_csv(r'data/scores_train.csv')
+    # data = train[train['id'].isin(all_nodes)].copy()
+    # data.drop(data.columns.difference(['id', 'target']), 1, inplace=True)
+    #
+    # X_train, X_test, y_train, y_test = train_test_split(data['id'], data['target'], test_size=0.3)
+    #
+    # G_train = G.subgraph(X_train)
+    # # G_test = G.subgraph(X_test)
+    #
+    # weight = 'jaccard_sim'
+    #
+    # print('calculate scores...')
+    # scores_train = scores_degree3(G_train, weight)
+    # scores_train = pd.read_csv(r'data/scores_train.csv')
 
     # degrees_df = pd.read_csv(r'data/degrees_df.csv')
     # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].max()
