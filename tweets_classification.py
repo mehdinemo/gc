@@ -26,6 +26,25 @@ def jaccard_sim(data):
     return data
 
 
+def sim_nodes_detector(data_sim):
+    sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
+    sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
+    sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
+
+    sim_nodes = pd.DataFrame(sim_nodes)
+    sim_nodes['is_similar'] = 0
+
+    for row in sim_nodes.itertuples():
+        if row.is_similar == 0:
+            sim_nodes.at[row.target, 'is_similar'] = 1
+
+    sim_nodes = sim_nodes[sim_nodes['is_similar'] == 1]
+
+    data_sim = data_sim[(~data_sim['source'].isin(sim_nodes.index)) & (~data_sim['target'].isin(sim_nodes.index))]
+
+    return data_sim
+
+
 def scores_degree(G: nx.Graph) -> pd.DataFrame:
     print('creating degree of graph...')
     degrees_weight = G.degree(weight='jaccard_sim')
@@ -151,11 +170,12 @@ def scores_degree2(G: nx.Graph, method: str, sub_method: str, weight: str) -> pd
 def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
     print(f'calculate degree for graph')
 
-    degrees_df = nx.eigenvector_centrality(G, weight=weight)
-    degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
-    degrees_df.reset_index(inplace=True)
-    degrees_df.columns = ['node', 'degree']
-    # degrees_df = pd.read_csv('data/degrees_df.csv')
+    # degrees_df = nx.eigenvector_centrality(G, weight=weight)
+    # degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
+    # degrees_df.reset_index(inplace=True)
+    # degrees_df.columns = ['node', 'degree']
+    degrees_df = pd.read_csv('data/degrees_df.csv')
+    degrees_df.drop(degrees_df.columns.difference(['node', 'degree']), axis=1, inplace=True)
     print('graph degree calculated')
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -179,22 +199,27 @@ def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
     sub_deg_df = pd.DataFrame()
     for k, v in subgraph_dic.items():
         print(f'calculate eigenvector_centrality for {k}')
-        sub_deg = nx.eigenvector_centrality(v, max_iter=200, weight=weight)
-        sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
-        sub_deg.reset_index(inplace=True)
+        # sub_deg = nx.eigenvector_centrality(v, max_iter=200, weight=weight)
+        # sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
+        # sub_deg.reset_index(inplace=True)
+
+        sub_deg = nx.degree(v, weight=weight)
+        sub_deg = pd.DataFrame(sub_deg)
+
         sub_deg.columns = ['node', 'class_degree']
-        sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
+        # sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
 
         sub_deg_df = sub_deg_df.append(sub_deg)
 
     degrees_df = degrees_df.merge(sub_deg_df, how='left', left_on='node', right_on='node')
-    degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
-    degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
+    # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
+    # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
 
-    degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
+    # degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
+    degrees_df['score'] = degrees_df['degree'] - degrees_df['class_degree']
     # degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
-    degrees_df.to_csv('data/degrees_df.csv', index=False)
+    # degrees_df.to_csv('data/degrees_df.csv', index=False)
     degrees_df.drop(degrees_df.columns.difference(['node', 'class', 'score']), axis=1, inplace=True)
 
     return degrees_df
@@ -234,7 +259,7 @@ def fit_nodes(test_train_sim, scores, drop_index=False):
     return predict
 
 
-def fit_nodes2(test_train_sim, scores, n_select, drop_index):
+def fit_nodes2(test_train_sim, scores, n_select=0, drop_index=False):
     test_train_sim = pd.DataFrame(test_train_sim)
     scores.set_index(['node'], inplace=True)
     scores.sort_values(by=['class', 'score'], ascending=False, inplace=True)
@@ -246,22 +271,34 @@ def fit_nodes2(test_train_sim, scores, n_select, drop_index):
             new_scores = scores.drop(index)
         else:
             new_scores = scores.copy()
-        tops = pd.DataFrame(columns=scores.columns)
-        botts = pd.DataFrame(columns=scores.columns)
-        for c in classes:
-            tops = tops.append(new_scores[new_scores['class'] == c].head(n_select))
-            botts = botts.append(new_scores[new_scores['class'] == c].tail(n_select))
+        if n_select != 0:
+            tops = pd.DataFrame(columns=scores.columns)
+            botts = pd.DataFrame(columns=scores.columns)
+            for c in classes:
+                tops = tops.append(new_scores[new_scores['class'] == c].head(n_select))
+                botts = botts.append(new_scores[new_scores['class'] == c].tail(n_select))
 
-        top_ind = tops.merge(row, how='left', left_index=True, right_index=True)
-        bott_ind = botts.merge(row, how='left', left_index=True, right_index=True)
+            top_ind = tops.merge(row, how='left', left_index=True, right_index=True)
+            bott_ind = botts.merge(row, how='left', left_index=True, right_index=True)
 
-        top_ind = top_ind[top_ind[index] != 0]
-        bott_ind = bott_ind[bott_ind[index] != 0]
+            # top_ind = top_ind[top_ind[index] != 0]
+            # bott_ind = bott_ind[bott_ind[index] != 0]
+            #
+            # top_ind[index] = top_ind[index] * top_ind['score']
+            # bott_ind[index] = bott_ind[index] * bott_ind['score']
 
-        top_ind = top_ind.groupby(['class'])[index].sum()
-        bott_ind = bott_ind.groupby(['class'])[index].sum()
+            top_ind = top_ind.groupby(['class'])[index].sum()
+            bott_ind = bott_ind.groupby(['class'])[index].sum()
 
-        n_score = top_ind - bott_ind
+            n_score = 2 * bott_ind - top_ind
+        else:
+            row = row.to_frame()
+            row = row.merge(new_scores, how='left', left_index=True, right_index=True)
+            row = row[row[index] != 0]
+            # row[index] = row[index] * row['score']
+            n_score = row.groupby(['class'])[index].mean()
+
+            # n_score = top_ind - bott_ind
 
         duplicated_labels = n_score.duplicated(False)
         if (True in duplicated_labels.values) or (len(n_score) == 0):
@@ -277,40 +314,26 @@ def main():
     print('select data from db...')
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/graph.csv')
+    train = pd.read_csv(r'data/train.csv')
     print('data loaded')
 
     data_sim = jaccard_sim(data)
 
-    sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
-    sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
-    sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
-
-    sim_nodes = pd.DataFrame(sim_nodes)
-    sim_nodes['is_similar'] = 0
-
-    for row in sim_nodes.itertuples():
-        if row.is_similar == 0:
-            sim_nodes.at[row.target, 'is_similar'] = 1
-
-    sim_nodes = sim_nodes[sim_nodes['is_similar'] == 1]
-
-    data_sim = data_sim[(~data_sim['source'].isin(sim_nodes.index)) & (~data_sim['target'].isin(sim_nodes.index))]
+    clear_data_sim = sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
-    del data, data_sim
+    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
-
-    train = pd.read_csv(r'data/train.csv')
 
     node_dic = dict(zip(train['id'], train['target']))
     nx.set_node_attributes(G, node_dic, 'label')
 
+    del data, data_sim, clear_data_sim, train
+
+    # adjacency matrix
     all_nodes = list(G.nodes)
-
     sim = nx.to_numpy_array(G, weight='jaccard_sim')
-
     sim = pd.DataFrame(sim)
     sim.index = all_nodes
     sim.columns = all_nodes
