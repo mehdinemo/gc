@@ -353,7 +353,7 @@ def main():
     node_dic = dict(zip(train['id'], train['target']))
     nx.set_node_attributes(G, node_dic, 'label')
 
-    del data, data_sim #, clear_data_sim
+    del data, data_sim  # , clear_data_sim
 
     # adjacency matrix
     all_nodes = list(G.nodes)
@@ -370,21 +370,21 @@ def main():
     # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
     # print('scores created')
 
-    labels = nx.get_node_attributes(G, 'label')
-    # n = math.ceil(0.2 * len(G))
-    test_predict = fit_nodes3(sim, train[['id', 'target']])
-    test_predict = pd.Series(test_predict).fillna(-1)
-    acc = classification_report(list(labels.values()), list(test_predict))
-    print(acc)
+    # labels = nx.get_node_attributes(G, 'label')
+    # # n = math.ceil(0.2 * len(G))
+    # test_predict = fit_nodes3(sim, train[['id', 'target']])
+    # test_predict = pd.Series(test_predict).fillna(-1)
+    # acc = classification_report(list(labels.values()), list(test_predict))
+    # print(acc)
 
     # # select test and train
-    # data = train[train['id'].isin(all_nodes)].copy()
-    # data.drop(data.columns.difference(['id', 'target']), 1, inplace=True)
-    #
-    # X_train, X_test, y_train, y_test = train_test_split(data['id'], data['target'], test_size=0.3)
-    #
+    data = train[train['id'].isin(all_nodes)].copy()
+    data.drop(data.columns.difference(['id', 'target']), 1, inplace=True)
+
+    X_train, X_test, y_train, y_test = train_test_split(data['id'], data['target'], random_state=0)
+
     # G_train = G.subgraph(X_train)
-    # # G_test = G.subgraph(X_test)
+    # G_test = G.subgraph(X_test)
     #
     # weight = 'jaccard_sim'
     #
@@ -406,13 +406,14 @@ def main():
     #
     # print('scores created')
     #
-    # sim_test_train = sim.drop(X_train)
-    # sim_test_train.drop(columns=X_test, axis=1, inplace=True)
+    sim_test_train = sim.drop(X_train)
+    sim_test_train.drop(columns=X_test, axis=1, inplace=True)
     # n = math.ceil(0.2 * len(G_train))
     # test_predict = fit_nodes(sim_test_train, scores_train.copy(), n, False)
-    # test_predict = pd.Series(test_predict).fillna(-1)
-    # acc = classification_report(y_test, test_predict, output_dict=False)
-    # print(acc)
+    test_predict = fit_nodes3(sim_test_train, train[['id', 'target']])
+    test_predict = pd.Series(test_predict).fillna(-1)
+    acc = classification_report(y_test, test_predict, output_dict=False)
+    print(acc)
     #
     print('done')
 
