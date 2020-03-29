@@ -376,10 +376,10 @@ def scores_degree4(G: nx.Graph, weight: str) -> pd.DataFrame:
     return degrees_df
 
 
-def fit_nodes3(test_train_sim, train: pd.DataFrame, scores: pd.DataFrame):
-    scores.set_index(['node'], inplace=True)
-    # scores.sort_values(by=['class', 'score'], ascending=False, inplace=True)
-    classes = scores['class'].unique()
+def fit_nodes3(test_train_sim, train: pd.DataFrame):
+    # scores.set_index(['node'], inplace=True)
+    # # scores.sort_values(by=['class', 'score'], ascending=False, inplace=True)
+    # classes = scores['class'].unique()
 
     train.set_index('id', inplace=True)
     test_train_sim = pd.DataFrame(test_train_sim)
@@ -387,26 +387,21 @@ def fit_nodes3(test_train_sim, train: pd.DataFrame, scores: pd.DataFrame):
     predict = []
     for index, row in tqdm(test_train_sim.iterrows(), total=test_train_sim.shape[0]):
         row = row.to_frame()
-        row = row.merge(scores, how='left', left_index=True, right_index=True)
+        row = row.merge(train, how='left', left_index=True, right_index=True)
         row = row[row[index] != 0]
-        row.sort_values(by=['class', 'score'], ascending=False, inplace=True)
+        # row.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
-        tops = pd.DataFrame(columns=row.columns)
-        bots = pd.DataFrame(columns=row.columns)
-        for c in classes:
-            row_c = row[row['class'] == c]
-            n = math.ceil(0.1 * len(row_c))
-            tops = tops.append(row_c.head(n))
-            bots = bots.append(row_c.tail(n))
-
-        # tops[index] = tops[index] * tops['score']
-        tops = tops.groupby(['class'])[index].sum()
-        bots = bots.groupby(['class'])[index].sum()
-
-        n_score = tops - bots
+        # tops = pd.DataFrame(columns=row.columns)
+        # for c in classes:
+        #     row_c = row[row['class'] == c]
+        #     n = math.ceil(0.5 * len(row_c))
+        #     tops = tops.append(row_c.head(n))
+        #
+        # # tops[index] = tops[index] * tops['score']
+        # n_score = tops.groupby(['class'])[index].sum()
 
         # row[index] = row[index] * row['score']
-        # n_score = row.groupby(['class'])[index].sum()
+        n_score = row.groupby(['target'])[index].sum()
 
         duplicated_labels = n_score.duplicated(False)
         if (True in duplicated_labels.values) or (len(n_score) == 0):
@@ -445,18 +440,18 @@ def main():
     sim = pd.DataFrame(sim)
     sim.index = all_nodes
     sim.columns = all_nodes
-    # sim.to_csv(r'data/sim_all.csv')
+    sim.to_csv(r'data/sim_all.csv')
 
-    print('calculate scores...')
-    scores = scores_degree4(G, 'jaccard_sim')
-    # scores = scores_degree(G)
-    # scores.to_csv(r'data/scores_tweet_eig_degree.csv', index=False)
-    # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
-    print('scores created')
+    # print('calculate scores...')
+    # scores = scores_degree4(G, 'jaccard_sim')
+    # # scores = scores_degree(G)
+    # # scores.to_csv(r'data/scores_tweet_eig_degree.csv', index=False)
+    # # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
+    # print('scores created')
 
     labels = nx.get_node_attributes(G, 'label')
-    n = math.ceil(0.15 * len(G))
-    test_predict = fit_nodes3(sim, train[['id', 'target']], scores)
+    # n = math.ceil(0.15 * len(G))
+    test_predict = fit_nodes3(sim, train[['id', 'target']])
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(list(labels.values()), list(test_predict))
     print(acc)
