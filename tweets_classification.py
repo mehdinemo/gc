@@ -174,8 +174,10 @@ def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
     # degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
     # degrees_df.reset_index(inplace=True)
     # degrees_df.columns = ['node', 'degree']
+    # degrees_df.to_csv('data/degrees_df.csv', index=False)
+
     degrees_df = pd.read_csv('data/degrees_df.csv')
-    degrees_df.drop(degrees_df.columns.difference(['node', 'degree']), axis=1, inplace=True)
+    # degrees_df.drop(degrees_df.columns.difference(['node', 'degree']), axis=1, inplace=True)
     print('graph degree calculated')
 
     classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -212,11 +214,11 @@ def scores_degree3(G: nx.Graph, weight: str) -> pd.DataFrame:
         sub_deg_df = sub_deg_df.append(sub_deg)
 
     degrees_df = degrees_df.merge(sub_deg_df, how='left', left_on='node', right_on='node')
-    # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
-    # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
+    degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
+    degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
 
-    # degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
-    degrees_df['score'] = degrees_df['degree'] - degrees_df['class_degree']
+    degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
+    # degrees_df['score'] = degrees_df['degree'] - degrees_df['class_degree']
     # degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
     # degrees_df.to_csv('data/degrees_df.csv', index=False)
@@ -284,8 +286,8 @@ def fit_nodes2(test_train_sim, scores, n_select=0, drop_index=False):
             # top_ind = top_ind[top_ind[index] != 0]
             # bott_ind = bott_ind[bott_ind[index] != 0]
             #
-            # top_ind[index] = top_ind[index] * top_ind['score']
-            # bott_ind[index] = bott_ind[index] * bott_ind['score']
+            top_ind[index] = top_ind[index] * top_ind['score']
+            bott_ind[index] = bott_ind[index] * bott_ind['score']
 
             top_ind = top_ind.groupby(['class'])[index].sum()
             bott_ind = bott_ind.groupby(['class'])[index].sum()
@@ -310,6 +312,28 @@ def fit_nodes2(test_train_sim, scores, n_select=0, drop_index=False):
     return predict
 
 
+def fit_nodes3(test_train_sim, train: pd.DataFrame):
+    train.set_index('id', inplace=True)
+    test_train_sim = pd.DataFrame(test_train_sim)
+
+    predict = []
+    for index, row in tqdm(test_train_sim.iterrows(), total=test_train_sim.shape[0]):
+        row = row.to_frame()
+        row = row.merge(train, how='left', left_index=True, right_index=True)
+        row = row[row[index] != 0]
+        # row[index] = row[index] * row['score']
+        n_score = row.groupby(['target'])[index].sum()
+
+        duplicated_labels = n_score.duplicated(False)
+        if (True in duplicated_labels.values) or (len(n_score) == 0):
+            n_label = None
+        else:
+            n_label = n_score.idxmax()
+        predict.append(n_label)
+
+    return predict
+
+
 def main():
     print('select data from db...')
     # data = db._select(query_string, connection_string)
@@ -319,17 +343,17 @@ def main():
 
     data_sim = jaccard_sim(data)
 
-    clear_data_sim = sim_nodes_detector(data_sim)
+    # clear_data_sim = sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
+    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
     node_dic = dict(zip(train['id'], train['target']))
     nx.set_node_attributes(G, node_dic, 'label')
 
-    del data, data_sim, clear_data_sim, train
+    del data, data_sim #, clear_data_sim
 
     # adjacency matrix
     all_nodes = list(G.nodes)
@@ -339,16 +363,16 @@ def main():
     sim.columns = all_nodes
     # sim.to_csv(r'data/sim_all.csv')
 
-    print('calculate scores...')
+    # print('calculate scores...')
     # scores = scores_degree3(G, 'jaccard_sim')
     # scores = scores_degree(G)
     # scores.to_csv(r'data/scores_tweet_eig_degree.csv', index=False)
-    scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
-    print('scores created')
+    # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
+    # print('scores created')
 
     labels = nx.get_node_attributes(G, 'label')
-    n = math.ceil(0.25 * len(G))
-    test_predict = fit_nodes2(sim, scores, n, True)
+    # n = math.ceil(0.2 * len(G))
+    test_predict = fit_nodes3(sim, train[['id', 'target']])
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(list(labels.values()), list(test_predict))
     print(acc)
