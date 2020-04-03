@@ -355,7 +355,7 @@ def scores_degree4(G: nx.Graph, weight: str, method: str, sub_method: str) -> pd
             sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
             sub_deg.reset_index(inplace=True)
             sub_deg.columns = ['node', 'class_degree']
-            sub_deg['class_degree'] = min_max_scaler.fit_transform(sub_deg['class_degree'])
+            # sub_deg['class_degree'] = min_max_scaler.fit_transform(sub_deg['class_degree'])
             # sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
         elif sub_method == 'degree':
             sub_deg = nx.degree(v, weight=weight)
@@ -372,10 +372,10 @@ def scores_degree4(G: nx.Graph, weight: str, method: str, sub_method: str) -> pd
     # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
     # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
 
-    degrees_df['degree'] = min_max_scaler.fit_transform(degrees_df['degree'])
+    # degrees_df['degree'] = min_max_scaler.fit_transform(degrees_df['degree'])
 
     # degrees_df['score'] = degrees_df['class_degree'] / degrees_df['degree']
-    degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
+    # degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
     # degrees_df['score'] = 2 * degrees_df['class_degree'] - degrees_df['degree']
     # degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
 
@@ -453,7 +453,7 @@ def main():
     sim.to_csv(r'data/sim_all.csv')
 
     # print('calculate scores...')
-    scores = scores_degree4(G, 'jaccard_sim', 'eig', 'eig')
+    scores = scores_degree4(G, 'jaccard_sim', 'degree', 'degree')
 
     return
     # # scores = scores_degree(G)
