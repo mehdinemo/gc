@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.metrics import classification_report
 import time
 from prepare_data import PrepareData
+import numpy as np
 
 
 def prepare_graph():
@@ -38,6 +39,7 @@ def prepare_data():
     # cites.columns = ['cited', 'citing']
     cites.columns = ['source', 'target']
     G_cite = nx.from_pandas_edgelist(cites, source='source', target='target')
+    sim_cite = nx.to_numpy_array(G_cite)
 
     content = pd.read_csv(r'data\content.csv', sep='\t', header=None)
     # content.set_index(0, inplace=True)
@@ -48,10 +50,10 @@ def prepare_data():
     graph = pd.read_csv(r'data\cora_graph.csv')
 
     data_sim = pr._jaccard_sim(graph)
-    clear_data_sim = pr._sim_nodes_detector(data_sim)
+    # clear_data_sim = pr._sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
+    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
@@ -61,6 +63,10 @@ def prepare_data():
     # adjacency matrix
     all_nodes = list(G.nodes)
     sim = nx.to_numpy_array(G, weight='jaccard_sim')
+
+    sim_cite[sim_cite == 0] = 0.5
+    sim = sim * sim_cite
+
     sim = pd.DataFrame(sim)
     sim.index = all_nodes
     sim.columns = all_nodes
