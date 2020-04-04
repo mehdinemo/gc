@@ -10,40 +10,7 @@ from sklearn import svm
 from config import config
 from database_manager import DataBase
 from tqdm import tqdm
-
-
-def jaccard_sim(data):
-    nodes = data[data['source'] == data['target']].copy()
-    nodes.drop(['target'], axis=1, inplace=True)
-    nodes.columns = ['node', 'node_weigh']
-
-    data = data.merge(nodes, how='left', left_on='source', right_on='node')
-    data = data.merge(nodes, how='left', left_on='target', right_on='node')
-
-    data['jaccard_sim'] = data['weight'] / (data['node_weigh_x'] + data['node_weigh_y'] - data['weight'])
-    # data['jaccard_conf_sim'] = data['confidence'] / (data['node_conf_x'] + data['node_conf_y'] - data['confidence'])
-    data.drop(data.columns.difference(['source', 'target', 'jaccard_sim']), axis=1, inplace=True)
-
-    return data
-
-
-def sim_nodes_detector(data_sim):
-    sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
-    sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
-    sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
-
-    sim_nodes = pd.DataFrame(sim_nodes)
-    sim_nodes['is_similar'] = 0
-
-    for row in sim_nodes.itertuples():
-        if row.is_similar == 0:
-            sim_nodes.at[row.target, 'is_similar'] = 1
-
-    sim_nodes = sim_nodes[sim_nodes['is_similar'] == 1]
-
-    data_sim = data_sim[(~data_sim['source'].isin(sim_nodes.index)) & (~data_sim['target'].isin(sim_nodes.index))]
-
-    return data_sim
+from prepare_data import PrepareData
 
 
 def scores_degree(G: nx.Graph) -> pd.DataFrame:
@@ -424,15 +391,16 @@ def fit_nodes3(test_train_sim, train: pd.DataFrame):
 
 
 def main():
+    pr = PrepareData()
     print('select data from db...')
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/graph.csv')
     train = pd.read_csv(r'data/train.csv')
     print('data loaded')
 
-    data_sim = jaccard_sim(data)
+    data_sim = pr._jaccard_sim(data)
 
-    clear_data_sim = sim_nodes_detector(data_sim)
+    clear_data_sim = pr._sim_nodes_detector(data_sim)
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
