@@ -136,8 +136,11 @@ class PrepareData():
             row = row[row[index] != 0]
 
             if nscore_method == 'max':
-                n_score = row.loc[row[index].idxmax()]
-                n_label = n_score['class']
+                if len(row) > 0:
+                    n_score = row.loc[row[index].idxmax()]
+                    n_label = n_score['class']
+                else:
+                    n_label = None
             else:
                 if nscore_method == 'sum':
                     n_score = row.groupby(['class'])[index].sum()

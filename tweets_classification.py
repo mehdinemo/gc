@@ -396,6 +396,7 @@ def main():
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/graph.csv')
     train = pd.read_csv(r'data/train.csv')
+    train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
 
     data_sim = pr._jaccard_sim(data)
@@ -407,23 +408,18 @@ def main():
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
-    node_dic = dict(zip(train['id'], train['target']))
+    node_dic = dict(zip(train['id'], train['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
     del data, data_sim, clear_data_sim
 
     # adjacency matrix
-    all_nodes = list(G.nodes)
-    sim = nx.to_numpy_array(G, weight='jaccard_sim')
-    sim = pd.DataFrame(sim)
-    sim.index = all_nodes
-    sim.columns = all_nodes
-    sim.to_csv(r'data/sim_all.csv')
+    sim = pr._adj_matrix(G, weight='jaccard_sim')
 
     # print('calculate scores...')
-    scores = scores_degree4(G, 'jaccard_sim', 'degree', 'degree')
+    scores = pd.DataFrame()
+    # scores = pr._scores_degree(G, 'jaccard_sim', 'eig', 'eig')
 
-    return
     # # scores = scores_degree(G)
     # scores.to_csv(r'data/scores_tweet_eig.csv', index=False)
     # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
@@ -431,14 +427,24 @@ def main():
 
     labels = nx.get_node_attributes(G, 'label')
     # n = math.ceil(0.15 * len(G))
-    test_predict = fit_nodes3(sim, train[['id', 'target']])
+    test_predict = pr._fit_nodes(sim, train[['id', 'class']], scores, 'max')
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(list(labels.values()), list(test_predict))
     print(acc)
 
-    test_predict = test_predict.to_frame()
-    test_predict.index = sim.index
-    test_predict.to_csv('data/test_predict.csv')
+    target = list(labels.values())
+    test_predict = list(test_predict)
+    true_predict = 0
+    for i in range(len(target)):
+        if target[i] == test_predict[i]:
+            true_predict = true_predict + 1
+
+    acc = true_predict / len(target)
+    print(f'accuracy = {round(acc, 2)}')
+
+    # test_predict = test_predict.to_frame()
+    # test_predict.index = sim.index
+    # test_predict.to_csv('data/test_predict.csv')
 
     # # select test and train
     # data = train[train['id'].isin(all_nodes)].copy()
