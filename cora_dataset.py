@@ -4,6 +4,8 @@ from sklearn.metrics import classification_report
 import time
 from prepare_data import PrepareData
 import numpy as np
+import matplotlib.pyplot as plt
+import numpy.linalg
 
 
 def prepare_graph():
@@ -36,10 +38,11 @@ def prepare_graph():
 def prepare_data():
     pr = PrepareData()
     cites = pd.read_csv(r'data\cites.csv', sep='\t', header=None)
-    # cites.columns = ['cited', 'citing']
     cites.columns = ['source', 'target']
     G_cite = nx.from_pandas_edgelist(cites, source='source', target='target')
-    sim_cite = nx.to_numpy_array(G_cite)
+
+    # adjacency matrix
+    sim_cite = pr._adj_matrix(G_cite)
 
     content = pd.read_csv(r'data\content.csv', sep='\t', header=None)
     # content.set_index(0, inplace=True)
@@ -50,34 +53,45 @@ def prepare_data():
     graph = pd.read_csv(r'data\cora_graph.csv')
 
     data_sim = pr._jaccard_sim(graph)
-    # clear_data_sim = pr._sim_nodes_detector(data_sim)
+    clear_data_sim = pr._sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
+    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
+
+    # node_dic = dict(zip(classes['id'], classes['class']))
+    # nx.set_node_attributes(G, node_dic, 'label')
+
+    # L = nx.normalized_laplacian_matrix(G, weight='jaccard_sim')
+    # e = numpy.linalg.eigvals(L.A)
+    # print("Largest eigenvalue:", max(e))
+    # print("Smallest eigenvalue:", min(e))
+    # plt.hist(e, bins=100)  # histogram with 100 bins
+    # plt.xlim(0, 2)  # eigenvalues between 0 and 2
+    # plt.show()
+
+    # adjacency matrix
+    sim = pr._adj_matrix(G, 'jaccard_sim')
+
+    # merge two sim
+    # sim_cite[sim_cite == 0] = 0.5
+    sim_multiply = sim + sim_cite
+    sim_multiply.drop(sim_cite.columns.difference(sim.columns), axis=1, inplace=True)
+    sim_multiply.dropna(axis=0, inplace=True)
+    G = nx.from_pandas_adjacency(sim_multiply)
 
     node_dic = dict(zip(classes['id'], classes['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
-    # adjacency matrix
-    all_nodes = list(G.nodes)
-    sim = nx.to_numpy_array(G, weight='jaccard_sim')
-
-    sim_cite[sim_cite == 0] = 0.5
-    sim = sim * sim_cite
-
-    sim = pd.DataFrame(sim)
-    sim.index = all_nodes
-    sim.columns = all_nodes
-    # sim.to_csv('data/sim_cora.csv')
+    sim = pr._adj_matrix(G)
 
     print('calculate scores...')
-    # scores = pr._scores_degree(G, 'jaccard_sim', 'degree', 'degree')
+    scores = pr._scores_degree(G, 'weight', 'eig', 'eig')
 
     labels = nx.get_node_attributes(G, 'label')
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, classes[['id', 'class']])
+    test_predict = pr._fit_nodes(sim, classes[['id', 'class']], scores, 'max')
     test_predict = pd.Series(test_predict).fillna(-1)
     acc = classification_report(list(labels.values()), list(test_predict))
     print(acc)

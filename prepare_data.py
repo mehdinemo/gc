@@ -4,6 +4,7 @@ import networkx as nx
 import scipy.sparse as sp
 import numpy as np
 
+
 def encode_onehot(labels):
     classes = set(labels)
     classes_dict = {c: np.identity(len(classes))[i, :] for i, c in enumerate(classes)}
@@ -86,7 +87,7 @@ class PrepareData():
                 sub_deg.reset_index(inplace=True)
                 sub_deg.columns = ['node', 'class_degree']
                 # sub_deg['class_degree'] = min_max_scaler.fit_transform(sub_deg['class_degree'])
-                # sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
+                sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
             elif sub_method == 'degree':
                 sub_deg = nx.degree(v, weight=weight)
                 sub_deg = pd.DataFrame(sub_deg)
@@ -98,12 +99,13 @@ class PrepareData():
 
         # degrees_df.to_csv('data/degrees_df.csv', index=False)
 
-        # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
-        # degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
+        degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
+        degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
         # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
 
         # degrees_df['degree'] = min_max_scaler.fit_transform(degrees_df['degree'])
 
+        # degrees_df['score'] = degrees_df['degree']
         degrees_df['score'] = degrees_df['class_degree'] / degrees_df['degree']
         # degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
         # degrees_df['score'] = 2 * degrees_df['class_degree'] - degrees_df['degree']
@@ -115,7 +117,7 @@ class PrepareData():
 
         return degrees_df
 
-    def _fit_nodes(self, sim, labels: pd.DataFrame,scores=pd.DataFrame()):
+    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='sum'):
         if scores.empty:
             labels.set_index('id', inplace=True)
         else:
@@ -132,16 +134,33 @@ class PrepareData():
                 row[index] = row[index] * row['score']
 
             row = row[row[index] != 0]
-            n_score = row.groupby(['class'])[index].mean()
 
-            duplicated_labels = n_score.duplicated(False)
-            if (True in duplicated_labels.values) or (len(n_score) == 0):
-                n_label = None
+            if nscore_method == 'max':
+                n_score = row.loc[row[index].idxmax()]
+                n_label = n_score['class']
             else:
-                n_label = n_score.idxmax()
+                if nscore_method == 'sum':
+                    n_score = row.groupby(['class'])[index].sum()
+                elif nscore_method == 'mean':
+                    n_score = row.groupby(['class'])[index].sum()
+                duplicated_labels = n_score.duplicated(False)
+                if (True in duplicated_labels.values) or (len(n_score) == 0):
+                    n_label = None
+                else:
+                    n_label = n_score.idxmax()
             predict.append(n_label)
 
         return predict
+
+    def _adj_matrix(self, G: nx.Graph, weight='weight'):
+        all_nodes = list(G.nodes)
+        sim = nx.to_numpy_array(G, weight=weight)
+
+        sim = pd.DataFrame(sim)
+        sim.index = all_nodes
+        sim.columns = all_nodes
+
+        return sim
 
     def _load_data(self, path="data/cora/", dataset="cora"):
         """Load citation network dataset (cora only for now)"""
@@ -170,4 +189,3 @@ class PrepareData():
         print('Dataset has {} nodes, {} edges, {} features.'.format(adj.shape[0], edges.shape[0], features.shape[1]))
 
         return features.todense(), adj, samples, labels
-
