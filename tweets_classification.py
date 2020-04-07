@@ -392,6 +392,17 @@ def fit_nodes3(test_train_sim, train: pd.DataFrame):
 
 def main():
     pr = PrepareData()
+    method = ''
+    sub_method = ''
+    # degree | eig
+
+    delete_similar_data = False
+    test = True
+    # True | False
+
+    label_method = 'sum'
+    # sum | mean | max
+
     print('select data from db...')
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/graph.csv')
@@ -400,47 +411,40 @@ def main():
     print('data loaded')
 
     data_sim = pr._jaccard_sim(data)
-
-    clear_data_sim = pr._sim_nodes_detector(data_sim)
+    if delete_similar_data:
+        print('delete similar data...')
+        data_sim = pr._sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
+    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
     node_dic = dict(zip(train['id'], train['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
-    del data, data_sim, clear_data_sim
+    del data, data_sim
+
+    if test:
+        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method)
+        return
 
     # adjacency matrix
     sim = pr._adj_matrix(G, weight='jaccard_sim')
 
-    # print('calculate scores...')
-    scores = pd.DataFrame()
-    # scores = pr._scores_degree(G, 'jaccard_sim', 'eig', 'eig')
-
-    # # scores = scores_degree(G)
-    # scores.to_csv(r'data/scores_tweet_eig.csv', index=False)
-    # scores = pd.read_csv(r'data/scores_tweet_eig_degree.csv')
-    # print('scores created')
+    if method == '':
+        scores = pd.DataFrame()
+    else:
+        print('calculate scores...')
+        scores = pr._scores_degree(G, 'weight', method, sub_method)
 
     labels = nx.get_node_attributes(G, 'label')
+    labels = pd.DataFrame.from_dict(labels, orient='index')
+    labels.columns = ['class']
+
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, train[['id', 'class']], scores, 'max')
-    test_predict = pd.Series(test_predict).fillna(-1)
-    acc = classification_report(list(labels.values()), list(test_predict))
-    print(acc)
-
-    target = list(labels.values())
-    test_predict = list(test_predict)
-    true_predict = 0
-    for i in range(len(target)):
-        if target[i] == test_predict[i]:
-            true_predict = true_predict + 1
-
-    acc = true_predict / len(target)
-    print(f'accuracy = {round(acc, 2)}')
+    test_predict = pr._fit_nodes(sim, labels, scores, 'sum')
+    pr._print_results(test_predict, labels)
 
     # test_predict = test_predict.to_frame()
     # test_predict.index = sim.index

@@ -1,24 +1,12 @@
 import networkx as nx
 import pandas as pd
-from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 import time
 from prepare_data import PrepareData
-import numpy as np
-import matplotlib.pyplot as plt
-import numpy.linalg
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import numpy.linalg
 
-
-def print_results(test_predict: pd.DataFrame, labels: pd.DataFrame):
-    test_predict.fillna(-1, inplace=True)
-    test_predict = pd.merge(test_predict, labels, how='left', left_index=True, right_index=True)
-    acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
-    print(acc)
-
-    test_predict['accuracy'] = test_predict['label'] == test_predict['class']
-    true_predict = len(test_predict[test_predict['accuracy'] == 1])
-    acc = true_predict / len(test_predict)
-    print(f'accuracy = {round(acc, 2)}')
 
 
 def prepare_graph():
@@ -78,7 +66,7 @@ def test_graph(G: nx.Graph, method='', sub_method='', test_size=None, label_meth
     sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
     test_predict = pr._fit_nodes(sim_test_train, labels, scores_train, label_method)
 
-    print_results(test_predict, labels)
+    pr._print_results(test_predict, labels)
 
 
 def prepare_data():
@@ -160,7 +148,7 @@ def prepare_data():
     # n = math.ceil(0.15 * len(G))
     test_predict = pr._fit_nodes(sim, labels, scores, label_method)
 
-    print_results(test_predict, labels)
+    pr._print_results(test_predict, labels)
 
 
 def main():

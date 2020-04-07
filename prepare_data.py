@@ -3,6 +3,8 @@ from tqdm import tqdm
 import networkx as nx
 import scipy.sparse as sp
 import numpy as np
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 
 
 def encode_onehot(labels):
@@ -13,7 +15,7 @@ def encode_onehot(labels):
 
 
 class PrepareData():
-    def _jaccard_sim(self, data):
+    def _jaccard_sim(self, data: pd.DataFrame) -> pd.DataFrame:
         nodes = data[data['source'] == data['target']].copy()
         nodes.drop(['target'], axis=1, inplace=True)
         nodes.columns = ['node', 'node_weigh']
@@ -26,7 +28,7 @@ class PrepareData():
 
         return data
 
-    def _sim_nodes_detector(self, data_sim):
+    def _sim_nodes_detector(self, data_sim: pd.DataFrame) -> pd.DataFrame:
         sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
         sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
         sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
@@ -44,7 +46,7 @@ class PrepareData():
 
         return data_sim
 
-    def _scores_degree(self, G: nx.Graph, weight: str, method: str, sub_method: str) -> pd.DataFrame:
+    def _scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
         print(f'calculate degree for graph')
 
         if method == 'eig':
@@ -99,8 +101,10 @@ class PrepareData():
 
         # degrees_df.to_csv('data/degrees_df.csv', index=False)
 
-        degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
-        degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
+        if method == 'eig':
+            degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
+            degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
+
         # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
 
         # degrees_df['degree'] = min_max_scaler.fit_transform(degrees_df['degree'])
@@ -117,7 +121,7 @@ class PrepareData():
 
         return degrees_df
 
-    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='sum') -> pd.DataFrame:
+    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='max') -> pd.DataFrame:
         if not scores.empty:
             scores.set_index('node', inplace=True)
         sim = pd.DataFrame(sim)
@@ -163,6 +167,50 @@ class PrepareData():
         sim.columns = all_nodes
 
         return sim
+
+    def _print_results(self, test_predict: pd.DataFrame, labels: pd.DataFrame):
+        test_predict.fillna(-1, inplace=True)
+        test_predict = pd.merge(test_predict, labels, how='left', left_index=True, right_index=True)
+        acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
+        print(acc)
+
+        # test_predict['accuracy'] = test_predict['label'] == test_predict['class']
+        # true_predict = len(test_predict[test_predict['accuracy'] == 1])
+        # acc = true_predict / len(test_predict)
+        # print(f'accuracy = {round(acc, 2)}')
+
+    def _test_graph(self, G: nx.Graph, method='', sub_method='', test_size=None, label_method='max'):
+        pr = PrepareData()
+
+        labels = nx.get_node_attributes(G, 'label')
+        labels = pd.DataFrame.from_dict(labels, orient='index')
+        labels.reset_index(inplace=True)
+        labels.columns = ['node', 'class']
+
+        X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=0,
+                                                            test_size=test_size)
+
+        G_train = G.subgraph(X_train)
+        # G_test = G.subgraph(X_test)
+
+        weight = 'weight'
+
+        if method == '':
+            scores_train = pd.DataFrame()
+        else:
+            print('calculate scores...')
+            scores_train = pr._scores_degree(G_train, weight, method=method, sub_method=sub_method)
+            print('scores created')
+
+        labels.set_index('node', inplace=True)
+        # adjacency matrix
+        sim = pr._adj_matrix(G)
+
+        sim_test_train = sim.drop(list(X_train.values))
+        sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
+        test_predict = pr._fit_nodes(sim_test_train, labels, scores_train, label_method)
+
+        pr._print_results(test_predict, labels)
 
     def _load_data(self, path="data/cora/", dataset="cora"):
         """Load citation network dataset (cora only for now)"""
