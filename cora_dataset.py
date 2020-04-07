@@ -1,11 +1,24 @@
 import networkx as nx
 import pandas as pd
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 import time
 from prepare_data import PrepareData
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg
+
+
+def print_results(test_predict: pd.DataFrame, labels: pd.DataFrame):
+    test_predict.fillna(-1, inplace=True)
+    test_predict = pd.merge(test_predict, labels, how='left', left_index=True, right_index=True)
+    acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
+    print(acc)
+
+    test_predict['accuracy'] = test_predict['label'] == test_predict['class']
+    true_predict = len(test_predict[test_predict['accuracy'] == 1])
+    acc = true_predict / len(test_predict)
+    print(f'accuracy = {round(acc, 2)}')
 
 
 def prepare_graph():
@@ -35,8 +48,53 @@ def prepare_graph():
     graph.to_csv('cora_graph.csv', index=False)
 
 
+def test_graph(G: nx.Graph, method='', sub_method='', test_size=None, label_method='max'):
+    pr = PrepareData()
+    labels = nx.get_node_attributes(G, 'label')
+    labels = pd.DataFrame.from_dict(labels, orient='index')
+    labels.reset_index(inplace=True)
+    labels.columns = ['node', 'class']
+
+    X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=0,
+                                                        test_size=test_size)
+
+    G_train = G.subgraph(X_train)
+    # G_test = G.subgraph(X_test)
+
+    weight = 'weight'
+
+    if method == '':
+        scores_train = pd.DataFrame()
+    else:
+        print('calculate scores...')
+        scores_train = pr._scores_degree(G_train, weight, method=method, sub_method=sub_method)
+        print('scores created')
+
+    labels.set_index('node', inplace=True)
+    # adjacency matrix
+    sim = pr._adj_matrix(G)
+
+    sim_test_train = sim.drop(list(X_train.values))
+    sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
+    test_predict = pr._fit_nodes(sim_test_train, labels, scores_train, label_method)
+
+    print_results(test_predict, labels)
+
+
 def prepare_data():
     pr = PrepareData()
+
+    method = ''
+    sub_method = ''
+    # degree | eig
+
+    delete_similar_data = False
+    test = True
+    # True | False
+
+    label_method = 'max'
+    # sum | mean | max
+
     cites = pd.read_csv(r'data\cites.csv', sep='\t', header=None)
     cites.columns = ['source', 'target']
     G_cite = nx.from_pandas_edgelist(cites, source='source', target='target')
@@ -45,18 +103,18 @@ def prepare_data():
     sim_cite = pr._adj_matrix(G_cite)
 
     content = pd.read_csv(r'data\content.csv', sep='\t', header=None)
-    # content.set_index(0, inplace=True)
     content.rename(columns={0: 'id', content.columns[-1]: 'class'}, inplace=True)
     classes = content[['id', 'class']].copy()
-    # content.drop(['class'], axis=1, inplace=True)
 
     graph = pd.read_csv(r'data\cora_graph.csv')
 
     data_sim = pr._jaccard_sim(graph)
-    clear_data_sim = pr._sim_nodes_detector(data_sim)
+    if delete_similar_data:
+        print('delete similar data...')
+        data_sim = pr._sim_nodes_detector(data_sim)
 
     print('creating graph...')
-    G = nx.from_pandas_edgelist(clear_data_sim, source='source', target='target', edge_attr=True)
+    G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
     G.remove_edges_from(nx.selfloop_edges(G))
     print(f'graph created with {len(G)} nodes and {G.number_of_edges()} edges.')
 
@@ -84,27 +142,25 @@ def prepare_data():
     node_dic = dict(zip(classes['id'], classes['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
+    if test:
+        test_graph(G, label_method=label_method)
+        return
+
     sim = pr._adj_matrix(G)
 
-    print('calculate scores...')
-    scores = pr._scores_degree(G, 'weight', 'eig', 'eig')
+    if method == '':
+        scores = pd.DataFrame()
+    else:
+        print('calculate scores...')
+        scores = pr._scores_degree(G, 'weight', method, sub_method)
 
     labels = nx.get_node_attributes(G, 'label')
+    labels = pd.DataFrame.from_dict(labels, orient='index')
+    labels.columns = ['class']
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, classes[['id', 'class']], scores, 'max')
-    test_predict = pd.Series(test_predict).fillna(-1)
-    acc = classification_report(list(labels.values()), list(test_predict))
-    print(acc)
+    test_predict = pr._fit_nodes(sim, labels, scores, label_method)
 
-    target = list(labels.values())
-    test_predict = list(test_predict)
-    true_predict = 0
-    for i in range(len(target)):
-        if target[i] == test_predict[i]:
-            true_predict = true_predict + 1
-
-    acc = true_predict / len(target)
-    print(f'accuracy = {round(acc, 2)}')
+    print_results(test_predict, labels)
 
 
 def main():
@@ -121,4 +177,6 @@ def main():
 
 
 if __name__ == '__main__':
+    # import sklearn
+    # print(sklearn.__version__)
     main()

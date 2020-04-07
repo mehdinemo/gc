@@ -117,14 +117,12 @@ class PrepareData():
 
         return degrees_df
 
-    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='sum'):
-        if scores.empty:
-            labels.set_index('id', inplace=True)
-        else:
+    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='sum') -> pd.DataFrame:
+        if not scores.empty:
             scores.set_index('node', inplace=True)
         sim = pd.DataFrame(sim)
 
-        predict = []
+        predict = pd.DataFrame(columns=['node', 'label'])
         for index, row in tqdm(sim.iterrows(), total=sim.shape[0]):
             row = row.to_frame()
             if scores.empty:
@@ -151,8 +149,9 @@ class PrepareData():
                     n_label = None
                 else:
                     n_label = n_score.idxmax()
-            predict.append(n_label)
+            predict = predict.append({'node': index, 'label': n_label}, ignore_index=True)
 
+        predict.set_index('node', inplace=True)
         return predict
 
     def _adj_matrix(self, G: nx.Graph, weight='weight'):
