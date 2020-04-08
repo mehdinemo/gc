@@ -11,6 +11,12 @@ from config import config
 from database_manager import DataBase
 from tqdm import tqdm
 from prepare_data import PrepareData
+import re
+
+import nltk.corpus
+
+nltk.download('stopwords')
+from nltk.corpus import stopwords
 
 
 def scores_degree(G: nx.Graph) -> pd.DataFrame:
@@ -390,6 +396,60 @@ def fit_nodes3(test_train_sim, train: pd.DataFrame):
     return predict
 
 
+def clean_text(df, text_field):
+    df[text_field] = df[text_field].str.lower()
+    df[text_field] = df[text_field].apply(
+        lambda elem: re.sub(r"(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", elem))
+    return df
+
+
+def svm_toward(G: nx.Graph, train_data: pd.DataFrame, random_state=None, test_size=None):
+    # train_data = train_data.drop(['keyword', 'location'], axis=1)
+
+    data_clean = clean_text(train_data, "text")
+    stop = stopwords.words('english')
+    data_clean['text'] = data_clean['text'].apply(
+        lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+
+    labels = nx.get_node_attributes(G, 'label')
+    labels = pd.DataFrame.from_dict(labels, orient='index')
+    labels.reset_index(inplace=True)
+    labels.columns = ['node', 'class']
+
+    if G:
+        X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=random_state,
+                                                            test_size=test_size)
+        X_train = X_train.to_frame()
+        X_train.columns = ['id']
+        X_train = pd.merge(X_train, data_clean, 'left', left_on='id', right_on='id')
+        y_train = X_train['class']
+        X_train = X_train['text']
+
+        X_test = X_test.to_frame()
+        X_test.columns = ['id']
+        X_test = pd.merge(X_test, data_clean, 'left', left_on='id', right_on='id')
+        y_test = X_test['class']
+        X_test = X_test['text']
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(data_clean['text'], data_clean['class'], random_state=0)
+
+    # from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.pipeline import Pipeline
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.feature_extraction.text import TfidfTransformer
+    from sklearn.linear_model import SGDClassifier
+    pipeline_sgd = Pipeline([
+        ('vect', CountVectorizer()),
+        ('tfidf', TfidfTransformer()),
+        ('nb', SGDClassifier()),
+    ])
+    model = pipeline_sgd.fit(X_train, y_train)
+
+    y_predict = model.predict(X_test)
+    print('SVM Results:')
+    print(classification_report(y_test, y_predict))
+
+
 def main():
     pr = PrepareData()
     method = ''
@@ -402,6 +462,9 @@ def main():
 
     label_method = 'sum'
     # sum | mean | max
+
+    random_state = 0
+    # int | None
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
@@ -426,7 +489,9 @@ def main():
     del data, data_sim
 
     if test:
-        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method)
+        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
+
+        svm_toward(G, train, random_state=random_state)
         return
 
     # adjacency matrix

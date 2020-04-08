@@ -7,13 +7,6 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 
 
-def encode_onehot(labels):
-    classes = set(labels)
-    classes_dict = {c: np.identity(len(classes))[i, :] for i, c in enumerate(classes)}
-    labels_onehot = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
-    return labels_onehot
-
-
 class PrepareData():
     def _jaccard_sim(self, data: pd.DataFrame) -> pd.DataFrame:
         nodes = data[data['source'] == data['target']].copy()
@@ -48,7 +41,6 @@ class PrepareData():
 
     def _scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
         print(f'calculate degree for graph')
-
         if method == 'eig':
             degrees_df = nx.eigenvector_centrality(G, weight=weight)
             degrees_df = pd.DataFrame.from_dict(degrees_df, orient='index')
@@ -58,7 +50,6 @@ class PrepareData():
             degrees_df = nx.degree(G, weight=weight)
             degrees_df = pd.DataFrame(degrees_df)
             degrees_df.columns = ['node', 'degree']
-
         print('graph degree calculated')
 
         classes = pd.DataFrame(nx.get_node_attributes(G, 'label').items(), columns=['node', 'class'])
@@ -79,7 +70,6 @@ class PrepareData():
             subgraph_dic.update({i: subgraph})
 
         # calculate degree for nodes in subgraphs
-        # min_max_scaler = preprocessing.MinMaxScaler()
         sub_deg_df = pd.DataFrame()
         for k, v in subgraph_dic.items():
             print(f'calculate eigenvector_centrality for {k}')
@@ -88,7 +78,6 @@ class PrepareData():
                 sub_deg = pd.DataFrame.from_dict(sub_deg, orient='index')
                 sub_deg.reset_index(inplace=True)
                 sub_deg.columns = ['node', 'class_degree']
-                # sub_deg['class_degree'] = min_max_scaler.fit_transform(sub_deg['class_degree'])
                 sub_deg['class_degree'] = sub_deg['class_degree'] / sub_deg['class_degree'].sum()
             elif sub_method == 'degree':
                 sub_deg = nx.degree(v, weight=weight)
@@ -99,23 +88,14 @@ class PrepareData():
 
         degrees_df = degrees_df.merge(sub_deg_df, how='left', left_on='node', right_on='node')
 
-        # degrees_df.to_csv('data/degrees_df.csv', index=False)
-
         if method == 'eig':
             degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
             degrees_df['degree'] = degrees_df['degree'] / degrees_df['degree'].sum()
-
-        # degrees_df['class_degree'] = degrees_df['class_degree'] / degrees_df['class_degree'].sum()
-
-        # degrees_df['degree'] = min_max_scaler.fit_transform(degrees_df['degree'])
 
         # degrees_df['score'] = degrees_df['degree']
         degrees_df['score'] = degrees_df['class_degree'] / degrees_df['degree']
         # degrees_df['score'] = degrees_df['class_degree'] - degrees_df['degree']
         # degrees_df['score'] = 2 * degrees_df['class_degree'] - degrees_df['degree']
-        # degrees_df.sort_values(by=['class', 'score'], ascending=False, inplace=True)
-
-        # degrees_df.to_csv('data/degrees_df.csv', index=False)
 
         degrees_df.drop(degrees_df.columns.difference(['node', 'class', 'score']), axis=1, inplace=True)
 
@@ -174,12 +154,8 @@ class PrepareData():
         acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
         print(acc)
 
-        # test_predict['accuracy'] = test_predict['label'] == test_predict['class']
-        # true_predict = len(test_predict[test_predict['accuracy'] == 1])
-        # acc = true_predict / len(test_predict)
-        # print(f'accuracy = {round(acc, 2)}')
-
-    def _test_graph(self, G: nx.Graph, method='', sub_method='', test_size=None, label_method='max'):
+    def _test_graph(self, G: nx.Graph, weight='weight', method='', sub_method='', test_size=None, random_state=None,
+                    label_method='max'):
         pr = PrepareData()
 
         labels = nx.get_node_attributes(G, 'label')
@@ -187,13 +163,9 @@ class PrepareData():
         labels.reset_index(inplace=True)
         labels.columns = ['node', 'class']
 
-        X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=0,
+        X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=random_state,
                                                             test_size=test_size)
-
         G_train = G.subgraph(X_train)
-        # G_test = G.subgraph(X_test)
-
-        weight = 'weight'
 
         if method == '':
             scores_train = pd.DataFrame()
@@ -212,13 +184,19 @@ class PrepareData():
 
         pr._print_results(test_predict, labels)
 
+    def _encode_onehot(self, labels):
+        classes = set(labels)
+        classes_dict = {c: np.identity(len(classes))[i, :] for i, c in enumerate(classes)}
+        labels_onehot = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
+        return labels_onehot
+
     def _load_data(self, path="data/cora/", dataset="cora"):
         """Load citation network dataset (cora only for now)"""
         print('Loading {} dataset...'.format(dataset))
 
         idx_features_labels = np.genfromtxt("{}{}.content".format(path, dataset), dtype=np.dtype(str))
         features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
-        labels = encode_onehot(idx_features_labels[:, -1])
+        labels = self._encode_onehot(idx_features_labels[:, -1])
         samples = labels[np.random.choice(labels.shape[0], 140, replace=False)]
 
         # build graph

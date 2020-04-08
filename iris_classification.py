@@ -10,6 +10,7 @@ import networkx as nx
 from sklearn.metrics import classification_report
 from sklearn import svm
 from tqdm import tqdm
+from prepare_data import PrepareData
 
 
 def calculate_scores(G: nx.Graph, method: str, sub_method: str) -> pd.DataFrame:
@@ -79,7 +80,7 @@ def fit_nodes(test_train_sim, scores, n_select, drop_index):
     classes = scores['class'].unique()
 
     predict = []
-    for index, row in tqdm(test_train_sim.iterrows(),total=test_train_sim.shape[0]):
+    for index, row in tqdm(test_train_sim.iterrows(), total=test_train_sim.shape[0]):
         if drop_index:
             new_scores = scores.drop(index)
         else:
@@ -132,20 +133,44 @@ def prepare_data():
 
 
 def main():
+    pr = PrepareData()
     res = prepare_data()
+
+    sim_method = 'euclidean'
+    # euclidean | cosine
+
+    method = ''
+    sub_method = ''
+    # degree | eig
+
+    delete_similar_data = False
+    test = True
+    # True | False
+
+    random_state = 0
+    # int | None
+
+    label_method = 'max'
+    # sum | mean | max
 
     datapoints = res['datapoints']
     labels = res['labels']
 
-    # dis = euclidean_distances(datapoints)
-    # sim = 1 / (1 + dis)
-    # G = nx.from_numpy_matrix(sim)
-    # G.remove_edges_from(nx.selfloop_edges(G))
-    # node_dic = dict(zip(range(0, len(datapoints)), labels))
-    # nx.set_node_attributes(G, node_dic, 'label')
+    if sim_method == 'euclidean':
+        dis = euclidean_distances(datapoints)
+        sim = 1 / (1 + dis)
+    elif sim_method == 'cosine':
+        sim = cosine_similarity(datapoints)
 
-    method = 'eig'
-    sub_method = 'degree'
+    G = nx.from_numpy_matrix(sim)
+    G.remove_edges_from(nx.selfloop_edges(G))
+    node_dic = dict(zip(range(0, len(datapoints)), labels))
+    nx.set_node_attributes(G, node_dic, 'label')
+
+    if test:
+        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
+        # return
+
     # scores = calculate_scores(G, method, sub_method)
 
     # accuracy = pd.DataFrame()
@@ -162,28 +187,28 @@ def main():
     # accuracy.to_csv('data/accuracy.csv')
 
     # select test and train
-    X_train, X_test, y_train, y_test = train_test_split(datapoints, labels, test_size=0.3)
+    X_train, X_test, y_train, y_test = train_test_split(datapoints, labels, random_state=random_state)
 
-    # distance and similarity
-    dis_train = euclidean_distances(X_train)
-    sim_train = 1 / (1 + dis_train)
-
-    # build graph for train data
-    G_train = nx.from_numpy_matrix(sim_train)
-    G_train.remove_edges_from(nx.selfloop_edges(G_train))
-
-    train_node_dic = dict(zip(range(0, len(X_train)), y_train))
-    nx.set_node_attributes(G_train, train_node_dic, 'label')
-
-    scores_train = calculate_scores(G_train, method, sub_method)
-
-    test_train_dis = euclidean_distances(X_test, X_train)
-    test_train_sim = 1 / (1 + test_train_dis)
-
-    n = math.ceil(0.2 * len(X_train))
-    test_predict = fit_nodes(test_train_sim, scores_train.copy(), n, False)
-    acc = classification_report(y_test, test_predict, output_dict=False)
-    print(acc)
+    # # distance and similarity
+    # dis_train = euclidean_distances(X_train)
+    # sim_train = 1 / (1 + dis_train)
+    #
+    # # build graph for train data
+    # G_train = nx.from_numpy_matrix(sim_train)
+    # G_train.remove_edges_from(nx.selfloop_edges(G_train))
+    #
+    # train_node_dic = dict(zip(range(0, len(X_train)), y_train))
+    # nx.set_node_attributes(G_train, train_node_dic, 'label')
+    #
+    # scores_train = calculate_scores(G_train, method, sub_method)
+    #
+    # test_train_dis = euclidean_distances(X_test, X_train)
+    # test_train_sim = 1 / (1 + test_train_dis)
+    #
+    # n = math.ceil(0.2 * len(X_train))
+    # test_predict = fit_nodes(test_train_sim, scores_train.copy(), n, False)
+    # acc = classification_report(y_test, test_predict, output_dict=False)
+    # print(acc)
 
     # svm
     clf = svm.SVC(decision_function_shape='ovo')

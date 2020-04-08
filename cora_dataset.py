@@ -3,10 +3,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import time
 from prepare_data import PrepareData
+
+
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import numpy.linalg
-
 
 
 def prepare_graph():
@@ -36,39 +37,6 @@ def prepare_graph():
     graph.to_csv('cora_graph.csv', index=False)
 
 
-def test_graph(G: nx.Graph, method='', sub_method='', test_size=None, label_method='max'):
-    pr = PrepareData()
-    labels = nx.get_node_attributes(G, 'label')
-    labels = pd.DataFrame.from_dict(labels, orient='index')
-    labels.reset_index(inplace=True)
-    labels.columns = ['node', 'class']
-
-    X_train, X_test, y_train, y_test = train_test_split(labels['node'], labels['class'], random_state=0,
-                                                        test_size=test_size)
-
-    G_train = G.subgraph(X_train)
-    # G_test = G.subgraph(X_test)
-
-    weight = 'weight'
-
-    if method == '':
-        scores_train = pd.DataFrame()
-    else:
-        print('calculate scores...')
-        scores_train = pr._scores_degree(G_train, weight, method=method, sub_method=sub_method)
-        print('scores created')
-
-    labels.set_index('node', inplace=True)
-    # adjacency matrix
-    sim = pr._adj_matrix(G)
-
-    sim_test_train = sim.drop(list(X_train.values))
-    sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
-    test_predict = pr._fit_nodes(sim_test_train, labels, scores_train, label_method)
-
-    pr._print_results(test_predict, labels)
-
-
 def prepare_data():
     pr = PrepareData()
 
@@ -82,6 +50,9 @@ def prepare_data():
 
     label_method = 'max'
     # sum | mean | max
+
+    random_state = 0
+    # int |None
 
     cites = pd.read_csv(r'data\cites.csv', sep='\t', header=None)
     cites.columns = ['source', 'target']
@@ -131,7 +102,7 @@ def prepare_data():
     nx.set_node_attributes(G, node_dic, 'label')
 
     if test:
-        test_graph(G, label_method=label_method)
+        pr._test_graph(G, label_method=label_method,random_state=random_state)
         return
 
     sim = pr._adj_matrix(G)
