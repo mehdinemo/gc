@@ -42,6 +42,8 @@ if __name__ == '__main__':
     print("After")
     print(texts)
 
+    clean_text = texts[0]
+
     one_grams = [t.split(' ') for t in texts]
     print("1Grams")
     print(one_grams)
