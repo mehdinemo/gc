@@ -1,3 +1,7 @@
+import pandas as pd
+import re
+from text_tools import TextTools
+
 from NLPInfrastructure.normalizer import SentenceNormalizer
 
 from NLPInfrastructure.resources import stopWords, prepositions, postWords, Not1Gram
@@ -5,28 +9,34 @@ from NLPInfrastructure.resources import stopWords, prepositions, postWords, Not1
 normalizer = SentenceNormalizer()
 
 
+def remove_stopword(text):
+    text = text.replace('.', ' ').replace(',', ' ')
+    words = text.split(' ')
+    words_filtered = []
+    for w in words:
+        if (w not in stopWords) and (w not in prepositions) and (w not in postWords) and (w not in Not1Gram):
+            words_filtered.append(w)
+
+    res = ' '.join(words_filtered)
+    res = res.strip()
+    return res
+
+
 def normalize_text_atomic(text):
     text = normalizer.organize_text(text)
-    text = normalizer.replace_urls(text, 'MyURL')
-    text = normalizer.replace_emails(text)
+    text = normalizer.replace_urls(text, '')
+    text = normalizer.replace_emails(text, '')
     text = normalizer.replace_usernames(text)
-    text = normalizer.replace_hashtags(text, 'MyHashtag')
+    # text = normalizer.replace_hashtags(text, 'MyHashtag')
     text = normalizer.edit_arabic_letters(text)
     text = normalizer.replace_phone_numbers(text)
     text = normalizer.replace_emoji(text)
     text = normalizer.replace_duplicate_punctuation(text)
 
     text = normalizer.replace_consecutive_spaces(text)
+    text = remove_stopword(text)
+
     return text
-
-
-def remove_stopword(text):
-    words = text.split(' ')
-    words_filtered = []
-    for w in words:
-        if (w not in stopWords) and (w not in prepositions) and (w not in postWords) and (w not in Not1Gram):
-            words_filtered.append(w)
-    return ' '.join(words_filtered)
 
 
 def normalize_texts(texts):
@@ -34,16 +44,13 @@ def normalize_texts(texts):
 
 
 if __name__ == '__main__':
-    print("Before")
-    texts = ["علی #احمد به مدرسه میرود", "علی به مدرسه رفت www.google.com"]
-    print(texts)
+    tt = TextTools()
+    texts = pd.read_csv('data/sample_fa.csv')
+    texts['clean_text'] = normalize_texts(texts['text'])
 
-    texts = normalize_texts(texts)
-    print("After")
-    print(texts)
+    # allkeywords =  tt._text_to_allkeywords(texts)
+    # graph = tt._create_graph(allkeywords)
+    # graph.to_csv(r'data/sample_fa_graph.csv', index=False)
+    graph = pd.read_csv('data/sample_fa_graph.csv')
 
-    clean_text = texts[0]
-
-    one_grams = [t.split(' ') for t in texts]
-    print("1Grams")
-    print(one_grams)
+    print('done')

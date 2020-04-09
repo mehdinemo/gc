@@ -468,8 +468,8 @@ def main():
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
-    data = pd.read_csv(r'data/graph.csv')
-    train = pd.read_csv(r'data/train.csv')
+    data = pd.read_csv(r'data/sample_fa_graph.csv')
+    train = pd.read_csv(r'data/sample_fa.csv')
     train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
 
@@ -491,7 +491,7 @@ def main():
     if test:
         pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
 
-        svm_toward(G, train, random_state=random_state)
+        # svm_toward(G, train, random_state=random_state)
         return
 
     # adjacency matrix
