@@ -452,24 +452,31 @@ def svm_toward(G: nx.Graph, train_data: pd.DataFrame, random_state=None, test_si
 
 def main():
     pr = PrepareData()
-    method = ''
-    sub_method = ''
+    method = 'degree'
+    sub_method = 'degree'
     # degree | eig
 
-    delete_similar_data = False
+    delete_similar_data = True
     test = True
     # True | False
 
-    label_method = 'sum'
+    label_method = 'max'
     # sum | mean | max
 
     random_state = 0
     # int | None
 
+    weight = 'jaccard_sim'
+
     print('select data from db...')
     # data = db._select(query_string, connection_string)
     data = pd.read_csv(r'data/sample_fa_graph.csv')
     train = pd.read_csv(r'data/sample_fa.csv')
+
+    # data['source'] = data['source'].astype(str)
+    # data['target'] = data['target'].astype(str)
+    train['id'] = train['id'].astype(str)
+
     train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
 
@@ -477,6 +484,9 @@ def main():
     if delete_similar_data:
         print('delete similar data...')
         data_sim = pr._sim_nodes_detector(data_sim)
+
+    data_sim['source'] = data_sim['source'].astype(str)
+    data_sim['target'] = data_sim['target'].astype(str)
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
@@ -489,13 +499,13 @@ def main():
     del data, data_sim
 
     if test:
-        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
+        pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
 
         # svm_toward(G, train, random_state=random_state)
         return
 
     # adjacency matrix
-    sim = pr._adj_matrix(G, weight='jaccard_sim')
+    sim = pr._adj_matrix(G, weight=weight)
 
     if method == '':
         scores = pd.DataFrame()

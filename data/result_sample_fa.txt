@@ -1,0 +1,57 @@
+sample_fa
+sum-''
+              precision    recall  f1-score   support
+          -1       0.00      0.00      0.00         0
+           0       0.83      0.39      0.53       739
+           1       0.77      0.96      0.86      1597
+    accuracy                           0.78      2336
+   macro avg       0.53      0.45      0.46      2336
+weighted avg       0.79      0.78      0.75      2336
+
+sample_fa
+sum-''
+delete sim
+          -1       0.00      0.00      0.00         0
+           0       0.86      0.37      0.51       697
+           1       0.77      0.97      0.86      1550
+    accuracy                           0.78      2247
+   macro avg       0.54      0.45      0.46      2247
+weighted avg       0.80      0.78      0.75      2247
+
+sample_fa
+sum-deg
+delete sim False
+           0       0.81      0.20      0.32       739
+           1       0.73      0.98      0.83      1597
+    accuracy                           0.73      2336
+   macro avg       0.77      0.59      0.58      2336
+weighted avg       0.75      0.73      0.67      2336
+
+sample_fa
+max-''
+delete sim
+        -1.0       0.00      0.00      0.00         0
+         0.0       0.82      0.86      0.84       697
+         1.0       0.93      0.92      0.93      1550
+    accuracy                           0.90      2247
+   macro avg       0.59      0.59      0.59      2247
+weighted avg       0.90      0.90      0.90      2247
+
+sample_fa
+max-''
+delete sim False
+        -1.0       0.00      0.00      0.00         0
+         0.0       0.83      0.87      0.85       739
+         1.0       0.94      0.92      0.93      1597
+    accuracy                           0.90      2336
+   macro avg       0.59      0.60      0.59      2336
+weighted avg       0.90      0.90      0.90      2336
+
+sample_fa
+max-deg
+delete sim
+           0       0.93      0.67      0.78       697
+           1       0.87      0.98      0.92      1550
+    accuracy                           0.88      2247
+   macro avg       0.90      0.82      0.85      2247
+weighted avg       0.89      0.88      0.87      2247

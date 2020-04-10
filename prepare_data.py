@@ -119,10 +119,13 @@ class PrepareData():
 
             if nscore_method == 'max':
                 if len(row) > 0:
-                    n_score = row.loc[row[index].idxmax()]
-                    n_label = n_score['class']
+                    try:
+                        n_score = row.loc[row[index].idxmax()]
+                        n_label = n_score['class']
+                    except Exception as ex:
+                        print(ex)
                 else:
-                    n_label = None
+                    n_label = -1
             else:
                 if nscore_method == 'sum':
                     n_score = row.groupby(['class'])[index].sum()
@@ -130,7 +133,7 @@ class PrepareData():
                     n_score = row.groupby(['class'])[index].sum()
                 duplicated_labels = n_score.duplicated(False)
                 if (True in duplicated_labels.values) or (len(n_score) == 0):
-                    n_label = None
+                    n_label = -1
                 else:
                     n_label = n_score.idxmax()
             predict = predict.append({'node': index, 'label': n_label}, ignore_index=True)
@@ -176,7 +179,7 @@ class PrepareData():
 
         labels.set_index('node', inplace=True)
         # adjacency matrix
-        sim = pr._adj_matrix(G)
+        sim = pr._adj_matrix(G, weight)
 
         sim_test_train = sim.drop(list(X_train.values))
         sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
