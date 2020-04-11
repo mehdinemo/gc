@@ -154,6 +154,7 @@ class PrepareData():
     def _print_results(self, test_predict: pd.DataFrame, labels: pd.DataFrame):
         test_predict.fillna(-1, inplace=True)
         test_predict = pd.merge(test_predict, labels, how='left', left_index=True, right_index=True)
+        test_predict.to_csv('data/all_sample_predict.csv')
         acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
         print(acc)
 

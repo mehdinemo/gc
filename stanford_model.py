@@ -45,15 +45,16 @@ def normalize_texts(texts):
 
 if __name__ == '__main__':
     tt = TextTools()
-    texts = pd.read_csv('data/sample_fa.csv')
+    texts = pd.read_csv('data/all_sample.csv')
+    texts['id'] = texts['id'].astype('int64').astype(str)
 
-    texts = texts.sample(frac=0.1)
+    # texts = texts.sample(frac=0.1)
 
     texts['clean_text'] = normalize_texts(texts['text'])
 
     allkeywords =  tt._text_to_allkeywords(texts)
     graph = tt._create_graph(allkeywords)
-    graph.to_csv(r'data/sample_fa_graph2.csv', index=False)
+    graph.to_csv(r'data/graph_all_sample.csv', index=False)
     # graph = pd.read_csv('data/sample_fa_graph.csv')
 
     print('done')

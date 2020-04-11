@@ -452,30 +452,30 @@ def svm_toward(G: nx.Graph, train_data: pd.DataFrame, random_state=None, test_si
 
 def main():
     pr = PrepareData()
-    method = 'degree'
-    sub_method = 'degree'
+    method = ''
+    sub_method = ''
     # degree | eig
 
-    delete_similar_data = True
+    delete_similar_data = False
     test = True
     # True | False
 
     label_method = 'max'
     # sum | mean | max
 
-    random_state = 0
+    random_state = None
     # int | None
 
     weight = 'jaccard_sim'
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
-    data = pd.read_csv(r'data/sample_fa_graph.csv')
-    train = pd.read_csv(r'data/sample_fa.csv')
+    data = pd.read_csv(r'data/graph_all_sample.csv')
+    train = pd.read_csv(r'data/all_sample.csv')
 
-    # data['source'] = data['source'].astype(str)
-    # data['target'] = data['target'].astype(str)
-    train['id'] = train['id'].astype(str)
+    data['source'] = data['source'].astype('int64')
+    data['target'] = data['target'].astype('int64')
+    train['id'] = train['id'].astype("Int64").astype(str)
 
     train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
