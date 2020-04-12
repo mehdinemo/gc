@@ -470,8 +470,8 @@ def main():
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
-    data = pd.read_csv(r'data/graph_all_sample.csv')
-    train = pd.read_csv(r'data/all_sample.csv')
+    data = pd.read_csv(r'data/graph_asid.csv')
+    train = pd.read_csv(r'data/asid.csv')
 
     data['source'] = data['source'].astype('int64')
     data['target'] = data['target'].astype('int64')
@@ -496,10 +496,19 @@ def main():
     node_dic = dict(zip(train['id'], train['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
+    sim = pr._adj_matrix(G, weight)
+    G_p = pr._prune_max(sim)
+    sim_p = pr._adj_matrix(G_p, weight)
+    # sim.to_csv('data/sim.csv')
+    sim_p.to_csv('data/sim_p.csv')
+
+    longest_path = pr._longest_path(sim, weight)
+
     del data, data_sim
 
     if test:
-        pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
+        pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method,
+                       random_state=random_state)
 
         # svm_toward(G, train, random_state=random_state)
         return

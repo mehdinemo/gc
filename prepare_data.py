@@ -39,6 +39,66 @@ class PrepareData():
 
         return data_sim
 
+    def _longest_path(self, sim):
+        sim_neg = -1 * sim
+        G_neg = nx.from_pandas_adjacency(sim_neg)
+        G_neg.remove_edges_from(nx.selfloop_edges(G_neg))
+
+        longest_past = list(nx.shortest_path(G_neg).keys())
+
+
+        return longest_past
+
+    def _prune_max(self, sim: pd.DataFrame, weight='weight') -> pd.DataFrame:
+        max_val = sim.max()
+        max_ind = sim.idxmax()
+
+        max_edges = pd.merge(max_ind.to_frame(), max_val.to_frame(), how='inner', left_index=True, right_index=True)
+        max_edges.reset_index(inplace=True)
+        max_edges.columns = ['source', 'target', weight]
+
+        G_p = nx.from_pandas_edgelist(max_edges, source='source', target='target', edge_attr=True)
+        cc = nx.connected_components(G_p)
+        cc_list = []
+        for c in cc:
+            cc_list.append(c)
+
+        check_nodes = cc_list.pop(0)
+        while len(check_nodes) < len(G_p):
+            tmp = sim.loc[check_nodes].drop(check_nodes, axis=1)
+            max_ind = tmp.idxmax(axis=1)
+            max_val = tmp.max(axis=1)
+            source = max_val.idxmax()
+            val = max_val.max()
+            target = max_ind.loc[source]
+
+            G_p.add_edge(source, target, weight=val)
+
+            for i, v in enumerate(cc_list):
+                if target in v:
+                    break
+
+            check_nodes = check_nodes | cc_list.pop(i)
+
+        # print(
+        #     f'graph created with {len(G_p)} nodes and {G_p.number_of_edges()} edges and {nx.number_connected_components(G_p)} connected components.')
+
+        return G_p
+
+    def _dag_longest_path(self, G: nx.Graph, weight='weight'):
+        sim = self._adj_matrix(G, weight)
+
+        index = sim.first_valid_index()
+        longest_path = pd.DataFrame()
+        while len(longest_path) < len(G):
+            max_node = sim.loc[index].idxmax()
+            max_val = sim.loc[index][max_node]
+
+            longest_path = longest_path.append({'source': index, 'target': max_node, 'weight': max_val},
+                                               ignore_index=True)
+            sim.drop(index, axis=1, inplace=True)
+            index = max_node
+
     def _scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
         print(f'calculate degree for graph')
         if method == 'eig':
@@ -106,6 +166,7 @@ class PrepareData():
             scores.set_index('node', inplace=True)
         sim = pd.DataFrame(sim)
 
+        max_edges = pd.DataFrame(columns=['source', 'target', 'weight'])
         predict = pd.DataFrame(columns=['node', 'label'])
         for index, row in tqdm(sim.iterrows(), total=sim.shape[0]):
             row = row.to_frame()
@@ -120,8 +181,11 @@ class PrepareData():
             if nscore_method == 'max':
                 if len(row) > 0:
                     try:
-                        n_score = row.loc[row[index].idxmax()]
+                        ind_max = row[index].idxmax()
+                        n_score = row.loc[ind_max]
                         n_label = n_score['class']
+                        max_edges = max_edges.append({'source': index, 'target': ind_max, 'weight': n_score[index]},
+                                                     ignore_index=True)
                     except Exception as ex:
                         print(ex)
                 else:
@@ -138,6 +202,7 @@ class PrepareData():
                     n_label = n_score.idxmax()
             predict = predict.append({'node': index, 'label': n_label}, ignore_index=True)
 
+        max_edges.to_csv('data/max_edges.csv', index=False)
         predict.set_index('node', inplace=True)
         return predict
 
