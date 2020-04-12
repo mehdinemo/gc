@@ -44,10 +44,22 @@ class PrepareData():
         G_neg = nx.from_pandas_adjacency(sim_neg)
         G_neg.remove_edges_from(nx.selfloop_edges(G_neg))
 
-        longest_past = list(nx.shortest_path(G_neg).keys())
+        lp = nx.shortest_path(G_neg)
+        lp = next(iter(lp.values()))
+        longest_past = list(lp.keys())
 
+        G = nx.Graph()
+        for i, v in enumerate(longest_past):
+            if i + 1 < len(longest_past):
+                target = longest_past[i + 1]
+                weight = sim.loc[v][target]
+                G.add_edge(v, target, weight=weight)
+            else:
+                target = longest_past[0]
+                weight = sim.loc[v][target]
+                G.add_edge(v, target, weight=weight)
 
-        return longest_past
+        return G
 
     def _prune_max(self, sim: pd.DataFrame, weight='weight') -> pd.DataFrame:
         max_val = sim.max()

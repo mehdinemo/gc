@@ -502,7 +502,9 @@ def main():
     # sim.to_csv('data/sim.csv')
     sim_p.to_csv('data/sim_p.csv')
 
-    longest_path = pr._longest_path(sim, weight)
+    longest_path = pr._longest_path(sim)
+    sim_lp = pr._adj_matrix(longest_path)
+    sim_lp.to_csv('data/sim_lp.csv')
 
     del data, data_sim
 
