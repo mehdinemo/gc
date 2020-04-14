@@ -139,19 +139,17 @@ def main():
     sim_method = 'euclidean'
     # euclidean | cosine
 
-    method = ''
-    sub_method = ''
+    method = 'degree'
+    sub_method = 'degree'
     # degree | eig
-
-    delete_similar_data = False
     test = True
     # True | False
-
-    random_state = 0
-    # int | None
-
     label_method = 'max'
     # sum | mean | max
+    random_state = 0
+    # int | None
+    n_head_score = 0.5
+    # 0-1
 
     datapoints = res['datapoints']
     labels = res['labels']
@@ -168,7 +166,9 @@ def main():
     nx.set_node_attributes(G, node_dic, 'label')
 
     if test:
-        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state)
+        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state,
+                       n_head_score=n_head_score)
+        return
         # return
 
     # scores = calculate_scores(G, method, sub_method)

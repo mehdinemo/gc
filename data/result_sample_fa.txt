@@ -1,7 +1,6 @@
 sample_fa
 sum-''
               precision    recall  f1-score   support
-          -1       0.00      0.00      0.00         0
            0       0.83      0.39      0.53       739
            1       0.77      0.96      0.86      1597
     accuracy                           0.78      2336
@@ -11,7 +10,6 @@ weighted avg       0.79      0.78      0.75      2336
 sample_fa
 sum-''
 delete sim
-          -1       0.00      0.00      0.00         0
            0       0.86      0.37      0.51       697
            1       0.77      0.97      0.86      1550
     accuracy                           0.78      2247
@@ -30,7 +28,6 @@ weighted avg       0.75      0.73      0.67      2336
 sample_fa
 max-''
 delete sim
-        -1.0       0.00      0.00      0.00         0
          0.0       0.82      0.86      0.84       697
          1.0       0.93      0.92      0.93      1550
     accuracy                           0.90      2247
@@ -40,7 +37,6 @@ weighted avg       0.90      0.90      0.90      2247
 sample_fa
 max-''
 delete sim False
-        -1.0       0.00      0.00      0.00         0
          0.0       0.83      0.87      0.85       739
          1.0       0.94      0.92      0.93      1597
     accuracy                           0.90      2336
@@ -55,3 +51,40 @@ delete sim
     accuracy                           0.88      2247
    macro avg       0.90      0.82      0.85      2247
 weighted avg       0.89      0.88      0.87      2247
+
+sample_fa
+max-deg
+delete sim False
+           0       0.94      0.70      0.80       739
+           1       0.87      0.98      0.92      1597
+    accuracy                           0.89      2336
+   macro avg       0.91      0.84      0.86      2336
+weighted avg       0.90      0.89      0.88      2336
+
+sample_fa
+max-eig
+delete sim False
+        -1.0       0.00      0.00      0.00         0
+         0.0       0.36      1.00      0.53       739
+         1.0       1.00      0.18      0.31      1597
+    accuracy                           0.44      2336
+   macro avg       0.45      0.39      0.28      2336
+weighted avg       0.80      0.44      0.38      2336
+
+sample_fa
+sum-eig
+delete sim False
+           0       0.41      0.97      0.58       739
+           1       0.97      0.36      0.53      1597
+    accuracy                           0.56      2336
+   macro avg       0.46      0.45      0.37      2336
+weighted avg       0.79      0.56      0.54      2336
+
+sample_fa
+mean-''
+delete sim False
+           0       0.83      0.39      0.53       739
+           1       0.77      0.96      0.86      1597
+    accuracy                           0.78      2336
+   macro avg       0.53      0.45      0.46      2336
+weighted avg       0.79      0.78      0.75      2336

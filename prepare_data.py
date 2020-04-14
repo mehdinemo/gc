@@ -5,6 +5,7 @@ import scipy.sparse as sp
 import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+import math
 
 
 class PrepareData():
@@ -97,20 +98,6 @@ class PrepareData():
 
         return G_p
 
-    def _dag_longest_path(self, G: nx.Graph, weight='weight'):
-        sim = self._adj_matrix(G, weight)
-
-        index = sim.first_valid_index()
-        longest_path = pd.DataFrame()
-        while len(longest_path) < len(G):
-            max_node = sim.loc[index].idxmax()
-            max_val = sim.loc[index][max_node]
-
-            longest_path = longest_path.append({'source': index, 'target': max_node, 'weight': max_val},
-                                               ignore_index=True)
-            sim.drop(index, axis=1, inplace=True)
-            index = max_node
-
     def _scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
         print(f'calculate degree for graph')
         if method == 'eig':
@@ -178,7 +165,7 @@ class PrepareData():
             scores.set_index('node', inplace=True)
         sim = pd.DataFrame(sim)
 
-        max_edges = pd.DataFrame(columns=['source', 'target', 'weight'])
+        # max_edges = pd.DataFrame(columns=['source', 'target', 'weight'])
         predict = pd.DataFrame(columns=['node', 'label'])
         for index, row in tqdm(sim.iterrows(), total=sim.shape[0]):
             row = row.to_frame()
@@ -186,9 +173,10 @@ class PrepareData():
                 row = row.merge(labels, how='left', left_index=True, right_index=True)
             else:
                 row = row.merge(scores, how='left', left_index=True, right_index=True)
-                row[index] = row[index] * row['score']
+                # row[index] = row[index] * row['score']
 
-            row = row[row[index] != 0]
+            row.dropna(inplace=True)
+            # row = row[row[index] != 0]
 
             if nscore_method == 'max':
                 if len(row) > 0:
@@ -196,12 +184,12 @@ class PrepareData():
                         ind_max = row[index].idxmax()
                         n_score = row.loc[ind_max]
                         n_label = n_score['class']
-                        max_edges = max_edges.append({'source': index, 'target': ind_max, 'weight': n_score[index]},
-                                                     ignore_index=True)
+                        # max_edges = max_edges.append({'source': index, 'target': ind_max, 'weight': n_score[index]},
+                        #                              ignore_index=True)
                     except Exception as ex:
                         print(ex)
                 else:
-                    n_label = -1
+                    n_label = None
             else:
                 if nscore_method == 'sum':
                     n_score = row.groupby(['class'])[index].sum()
@@ -209,13 +197,16 @@ class PrepareData():
                     n_score = row.groupby(['class'])[index].sum()
                 duplicated_labels = n_score.duplicated(False)
                 if (True in duplicated_labels.values) or (len(n_score) == 0):
-                    n_label = -1
+                    n_label = None
                 else:
                     n_label = n_score.idxmax()
             predict = predict.append({'node': index, 'label': n_label}, ignore_index=True)
 
-        max_edges.to_csv('data/max_edges.csv', index=False)
         predict.set_index('node', inplace=True)
+
+        # predict.to_csv('data/predict.csv')
+        # max_edges.to_csv('data/max_edges.csv', index=False)
+
         return predict
 
     def _adj_matrix(self, G: nx.Graph, weight='weight'):
@@ -236,7 +227,7 @@ class PrepareData():
         print(acc)
 
     def _test_graph(self, G: nx.Graph, weight='weight', method='', sub_method='', test_size=None, random_state=None,
-                    label_method='max'):
+                    label_method='max', n_head_score=1):
         pr = PrepareData()
 
         labels = nx.get_node_attributes(G, 'label')
@@ -253,6 +244,18 @@ class PrepareData():
         else:
             print('calculate scores...')
             scores_train = pr._scores_degree(G_train, weight, method=method, sub_method=sub_method)
+
+            scores_train.sort_values(by=['class', 'score'], ascending=False, inplace=True)
+            classes = scores_train['class'].unique()
+            scores_sorted = pd.DataFrame()
+            for c in classes:
+                c_score = scores_train[scores_train['class'] == c].copy()
+                c_score.sort_values(by=['class', 'score'], ascending=False, inplace=True)
+                n = math.ceil(n_head_score * len(c_score))
+                c_score = c_score.head(n)
+                scores_sorted = scores_sorted.append(c_score)
+
+            scores_train = scores_sorted
             print('scores created')
 
         labels.set_index('node', inplace=True)

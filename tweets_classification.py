@@ -452,19 +452,18 @@ def svm_toward(G: nx.Graph, train_data: pd.DataFrame, random_state=None, test_si
 
 def main():
     pr = PrepareData()
-    method = ''
-    sub_method = ''
+    method = 'degree'
+    sub_method = 'degree'
     # degree | eig
-
     delete_similar_data = False
     test = True
     # True | False
-
     label_method = 'max'
     # sum | mean | max
-
-    random_state = None
+    random_state = 50
     # int | None
+    n_head_score = 0.5
+    # 0-1
 
     weight = 'jaccard_sim'
 
@@ -497,10 +496,10 @@ def main():
     nx.set_node_attributes(G, node_dic, 'label')
 
     sim = pr._adj_matrix(G, weight)
-    G_p = pr._prune_max(sim)
-    sim_p = pr._adj_matrix(G_p, weight)
-    # sim.to_csv('data/sim.csv')
-    sim_p.to_csv('data/sim_p.csv')
+    # G_p = pr._prune_max(sim)
+    # sim_p = pr._adj_matrix(G_p, weight)
+    # # sim.to_csv('data/sim.csv')
+    # sim_p.to_csv('data/sim_p.csv')
 
     longest_path = pr._longest_path(sim)
     sim_lp = pr._adj_matrix(longest_path)
@@ -510,7 +509,7 @@ def main():
 
     if test:
         pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method,
-                       random_state=random_state)
+                       random_state=random_state,n_head_score=n_head_score)
 
         # svm_toward(G, train, random_state=random_state)
         return
@@ -523,13 +522,14 @@ def main():
     else:
         print('calculate scores...')
         scores = pr._scores_degree(G, 'weight', method, sub_method)
+        scores.to_csv('data/scores.csv', index=False)
 
     labels = nx.get_node_attributes(G, 'label')
     labels = pd.DataFrame.from_dict(labels, orient='index')
     labels.columns = ['class']
 
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, labels, scores, 'sum')
+    test_predict = pr._fit_nodes(sim, labels, scores, label_method)
     pr._print_results(test_predict, labels)
 
     # test_predict = test_predict.to_frame()
