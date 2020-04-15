@@ -77,6 +77,7 @@ class PrepareData():
             cc_list.append(c)
 
         check_nodes = cc_list.pop(0)
+        pbar = tqdm(total= len(G_p) + 1)
         while len(check_nodes) < len(G_p):
             tmp = sim.loc[check_nodes].drop(check_nodes, axis=1)
             max_ind = tmp.idxmax(axis=1)
@@ -92,6 +93,7 @@ class PrepareData():
                     break
 
             check_nodes = check_nodes | cc_list.pop(i)
+        pbar.close()
 
         # print(
         #     f'graph created with {len(G_p)} nodes and {G_p.number_of_edges()} edges and {nx.number_connected_components(G_p)} connected components.')

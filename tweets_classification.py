@@ -11,6 +11,7 @@ from config import config
 from database_manager import DataBase
 from tqdm import tqdm
 from prepare_data import PrepareData
+from clustering_manipulator import ClusteringManipulator
 import re
 
 import nltk.corpus
@@ -452,6 +453,7 @@ def svm_toward(G: nx.Graph, train_data: pd.DataFrame, random_state=None, test_si
 
 def main():
     pr = PrepareData()
+    cm = ClusteringManipulator()
     method = 'degree'
     sub_method = 'degree'
     # degree | eig
@@ -469,8 +471,10 @@ def main():
 
     print('select data from db...')
     # data = db._select(query_string, connection_string)
-    data = pd.read_csv(r'data/graph_asid.csv')
-    train = pd.read_csv(r'data/asid.csv')
+    data = pd.read_csv(r'data/graph_sample_fa.csv')
+    train = pd.read_csv(r'data/sample_fa.csv')
+
+    train = train[train['target'] == 1]
 
     data['source'] = data['source'].astype('int64')
     data['target'] = data['target'].astype('int64')
@@ -495,21 +499,26 @@ def main():
     node_dic = dict(zip(train['id'], train['class']))
     nx.set_node_attributes(G, node_dic, 'label')
 
+    # prune graph with max weight
     sim = pr._adj_matrix(G, weight)
-    # G_p = pr._prune_max(sim)
-    # sim_p = pr._adj_matrix(G_p, weight)
-    # # sim.to_csv('data/sim.csv')
+    print('prune graph...')
+    G_p = pr._prune_max(sim)
+    print('graph pruned!')
+    # sim_p = pr._adj_matrix(G_p)
+    # sim.to_csv('data/sim.csv')
     # sim_p.to_csv('data/sim_p.csv')
 
-    longest_path = pr._longest_path(sim)
-    sim_lp = pr._adj_matrix(longest_path)
-    sim_lp.to_csv('data/sim_lp.csv')
+    partitions = cm.clustering_matrix(G_p, True)
+
+    # longest_path = pr._longest_path(sim)
+    # sim_lp = pr._adj_matrix(longest_path)
+    # sim_lp.to_csv('data/sim_lp.csv')
 
     del data, data_sim
 
     if test:
         pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method,
-                       random_state=random_state,n_head_score=n_head_score)
+                       random_state=random_state, n_head_score=n_head_score)
 
         # svm_toward(G, train, random_state=random_state)
         return

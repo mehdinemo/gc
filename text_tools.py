@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+from NLPInfrastructure.normalizer import SentenceNormalizer
+
+from NLPInfrastructure.resources import stopWords, prepositions, postWords, Not1Gram
+
+normalizer = SentenceNormalizer()
 
 
 class TextTools:
@@ -10,8 +15,8 @@ class TextTools:
                                     'word': np.concatenate(data['transactions'].values)})
         allkeywords['count'] = 1
         allkeywords = allkeywords.groupby(['message_id', 'word'], as_index=False).sum()
-        allkeywords = allkeywords.merge(data[['id', 'target']], how='left', left_on='message_id', right_on='id')
-        allkeywords.drop(['id'], axis=1, inplace=True)
+        # allkeywords = allkeywords.merge(data[['id', 'target']], how='left', left_on='message_id', right_on='id')
+        # allkeywords.drop(['id'], axis=1, inplace=True)
         return allkeywords
 
     def _create_graph(self, allkeywords):
@@ -20,3 +25,34 @@ class TextTools:
 
         graph.columns = ['source', 'target', 'weight']
         return graph
+
+    def remove_stopword(self, text):
+        text = text.replace('.', ' ').replace(',', ' ')
+        words = text.split(' ')
+        words_filtered = []
+        for w in words:
+            if (w not in stopWords) and (w not in prepositions) and (w not in postWords) and (w not in Not1Gram):
+                words_filtered.append(w)
+
+        res = ' '.join(words_filtered)
+        res = res.strip()
+        return res
+
+    def normalize_text_atomic(self, text):
+        text = normalizer.organize_text(text)
+        text = normalizer.replace_urls(text, '')
+        text = normalizer.replace_emails(text, '')
+        text = normalizer.replace_usernames(text)
+        # text = normalizer.replace_hashtags(text, 'MyHashtag')
+        text = normalizer.edit_arabic_letters(text)
+        text = normalizer.replace_phone_numbers(text)
+        text = normalizer.replace_emoji(text)
+        text = normalizer.replace_duplicate_punctuation(text)
+
+        text = normalizer.replace_consecutive_spaces(text)
+        text = self.remove_stopword(text)
+
+        return text
+
+    def normalize_texts(self, texts):
+        return [self.normalize_text_atomic(text) for text in texts]
