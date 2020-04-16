@@ -22,11 +22,11 @@ class ClusteringManipulator:
         dis = 1 - sim
 
         if noise_deletion:
-            dbs = DBSCAN(eps=0.8, min_samples=5, metric='precomputed').fit(dis)
+            dbs = DBSCAN(eps=0.9, min_samples=5, metric='precomputed').fit(dis)
 
             # Remove Noises from Graph
             noise_nodes = np.where(dbs.labels_ == -1)[0]
-            noise_nodes = dis.index[noise_nodes]
+            # noise_nodes = dis.index[noise_nodes]
             G.remove_nodes_from(noise_nodes)
 
         partitions = community.best_partition(G)

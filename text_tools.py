@@ -24,6 +24,7 @@ class TextTools:
         graph = graph.groupby(['message_id_x', 'message_id_y'], as_index=False)['word'].count()
 
         graph.columns = ['source', 'target', 'weight']
+        graph.drop(graph.loc[graph['source'] > graph['target']].index.tolist(), inplace=True)
         return graph
 
     def remove_stopword(self, text):
