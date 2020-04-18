@@ -55,8 +55,8 @@ if __name__ == '__main__':
 
     texts['clean_text'] = normalize_texts(texts['text'])
 
-    allkeywords = tt._text_to_allkeywords(texts)
-    graph = tt._create_graph(allkeywords)
+    allkeywords = tt.text_to_allkeywords(texts)
+    graph = tt.create_graph(allkeywords)
     graph.to_csv(r'data/graph_sample_fa.csv', index=False)
     # graph = pd.read_csv('data/sample_fa_graph.csv')
 

@@ -483,10 +483,10 @@ def main():
     train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
 
-    data_sim = pr._jaccard_sim(data)
+    data_sim = pr.jaccard_sim(data)
     if delete_similar_data:
         print('delete similar data...')
-        data_sim = pr._sim_nodes_detector(data_sim)
+        data_sim = pr.sim_nodes_detector(data_sim)
 
     data_sim['source'] = data_sim['source'].astype(str)
     data_sim['target'] = data_sim['target'].astype(str)
@@ -500,9 +500,9 @@ def main():
     nx.set_node_attributes(G, node_dic, 'label')
 
     # prune graph with max weight
-    sim = pr._adj_matrix(G, weight)
+    sim = pr.adj_matrix(G, weight)
     print('prune graph...')
-    G_p = pr._prune_max(sim)
+    G_p = pr.prune_max(sim)
     print('graph pruned!')
     # sim_p = pr._adj_matrix(G_p)
     # sim.to_csv('data/sim.csv')
@@ -517,20 +517,20 @@ def main():
     del data, data_sim
 
     if test:
-        pr._test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method,
-                       random_state=random_state, n_head_score=n_head_score)
+        pr.test_graph(G, weight=weight, method=method, sub_method=sub_method, label_method=label_method,
+                      random_state=random_state, n_head_score=n_head_score)
 
         # svm_toward(G, train, random_state=random_state)
         return
 
     # adjacency matrix
-    sim = pr._adj_matrix(G, weight=weight)
+    sim = pr.adj_matrix(G, weight=weight)
 
     if method == '':
         scores = pd.DataFrame()
     else:
         print('calculate scores...')
-        scores = pr._scores_degree(G, 'weight', method, sub_method)
+        scores = pr.scores_degree(G, 'weight', method, sub_method)
         scores.to_csv('data/scores.csv', index=False)
 
     labels = nx.get_node_attributes(G, 'label')
@@ -538,8 +538,8 @@ def main():
     labels.columns = ['class']
 
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, labels, scores, label_method)
-    pr._print_results(test_predict, labels)
+    test_predict = pr.fit_nodes(sim, labels, scores, label_method)
+    pr.print_results(test_predict, labels)
 
     # test_predict = test_predict.to_frame()
     # test_predict.index = sim.index

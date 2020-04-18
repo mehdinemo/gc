@@ -59,7 +59,7 @@ def prepare_data():
     G_cite = nx.from_pandas_edgelist(cites, source='source', target='target')
 
     # adjacency matrix
-    sim_cite = pr._adj_matrix(G_cite)
+    sim_cite = pr.adj_matrix(G_cite)
 
     content = pd.read_csv(r'data\content.csv', sep='\t', header=None)
     content.rename(columns={0: 'id', content.columns[-1]: 'class'}, inplace=True)
@@ -67,10 +67,10 @@ def prepare_data():
 
     graph = pd.read_csv(r'data\cora_graph.csv')
 
-    data_sim = pr._jaccard_sim(graph)
+    data_sim = pr.jaccard_sim(graph)
     if delete_similar_data:
         print('delete similar data...')
-        data_sim = pr._sim_nodes_detector(data_sim)
+        data_sim = pr.sim_nodes_detector(data_sim)
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)
@@ -89,7 +89,7 @@ def prepare_data():
     # plt.show()
 
     # adjacency matrix
-    sim = pr._adj_matrix(G, 'jaccard_sim')
+    sim = pr.adj_matrix(G, 'jaccard_sim')
 
     # merge two sim
     # sim_cite[sim_cite == 0] = 0.5
@@ -102,24 +102,24 @@ def prepare_data():
     nx.set_node_attributes(G, node_dic, 'label')
 
     if test:
-        pr._test_graph(G, label_method=label_method,random_state=random_state)
+        pr.test_graph(G, label_method=label_method, random_state=random_state)
         return
 
-    sim = pr._adj_matrix(G)
+    sim = pr.adj_matrix(G)
 
     if method == '':
         scores = pd.DataFrame()
     else:
         print('calculate scores...')
-        scores = pr._scores_degree(G, 'weight', method, sub_method)
+        scores = pr.scores_degree(G, 'weight', method, sub_method)
 
     labels = nx.get_node_attributes(G, 'label')
     labels = pd.DataFrame.from_dict(labels, orient='index')
     labels.columns = ['class']
     # n = math.ceil(0.15 * len(G))
-    test_predict = pr._fit_nodes(sim, labels, scores, label_method)
+    test_predict = pr.fit_nodes(sim, labels, scores, label_method)
 
-    pr._print_results(test_predict, labels)
+    pr.print_results(test_predict, labels)
 
 
 def main():

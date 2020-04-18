@@ -8,7 +8,7 @@ normalizer = SentenceNormalizer()
 
 
 class TextTools:
-    def _text_to_allkeywords(self, data: pd.DataFrame) -> pd.DataFrame:
+    def text_to_allkeywords(self, data: pd.DataFrame) -> pd.DataFrame:
         data['transactions'] = data['clean_text'].apply(lambda t: list(filter(None, t.split(' '))))
 
         allkeywords = pd.DataFrame({'message_id': np.repeat(data['id'].values, data['transactions'].str.len()),
@@ -19,7 +19,7 @@ class TextTools:
         # allkeywords.drop(['id'], axis=1, inplace=True)
         return allkeywords
 
-    def _create_graph(self, allkeywords):
+    def create_graph(self, allkeywords):
         graph = allkeywords.merge(allkeywords, how='inner', left_on='word', right_on='word')
         graph = graph.groupby(['message_id_x', 'message_id_y'], as_index=False)['word'].count()
 
@@ -27,7 +27,7 @@ class TextTools:
         graph.drop(graph.loc[graph['source'] > graph['target']].index.tolist(), inplace=True)
         return graph
 
-    def remove_stopword(self, text):
+    def _remove_stopword(self, text):
         text = text.replace('.', ' ').replace(',', ' ')
         words = text.split(' ')
         words_filtered = []
@@ -39,7 +39,7 @@ class TextTools:
         res = res.strip()
         return res
 
-    def normalize_text_atomic(self, text):
+    def _normalize_text_atomic(self, text):
         text = normalizer.organize_text(text)
         text = normalizer.replace_urls(text, '')
         text = normalizer.replace_emails(text, '')
@@ -51,9 +51,9 @@ class TextTools:
         text = normalizer.replace_duplicate_punctuation(text)
 
         text = normalizer.replace_consecutive_spaces(text)
-        text = self.remove_stopword(text)
+        text = self._remove_stopword(text)
 
         return text
 
     def normalize_texts(self, texts):
-        return [self.normalize_text_atomic(text) for text in texts]
+        return [self._normalize_text_atomic(text) for text in texts]

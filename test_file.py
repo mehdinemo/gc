@@ -27,18 +27,18 @@ def main():
 
     messages_df['clean_text'] = tt.normalize_texts(messages_df['text'])
 
-    allkeywords = tt._text_to_allkeywords(messages_df)
-    graph = tt._create_graph(allkeywords)
+    allkeywords = tt.text_to_allkeywords(messages_df)
+    graph = tt.create_graph(allkeywords)
 
     # graph.to_csv('data/graph_vohoush.csv', index=False)
 
     # graph['source'] = graph['source'].astype('int64')
     # graph['target'] = graph['target'].astype('int64')
 
-    data_sim = pr._jaccard_sim(graph)
+    data_sim = pr.jaccard_sim(graph)
     if delete_similar_data:
         print('delete similar data...')
-        data_sim = pr._sim_nodes_detector(data_sim)
+        data_sim = pr.sim_nodes_detector(data_sim)
 
     # data_sim['source'] = data_sim['source'].astype(str)
     # data_sim['target'] = data_sim['target'].astype(str)

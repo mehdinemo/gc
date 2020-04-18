@@ -166,8 +166,8 @@ def main():
     nx.set_node_attributes(G, node_dic, 'label')
 
     if test:
-        pr._test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state,
-                       n_head_score=n_head_score)
+        pr.test_graph(G, method=method, sub_method=sub_method, label_method=label_method, random_state=random_state,
+                      n_head_score=n_head_score)
         return
         # return
 

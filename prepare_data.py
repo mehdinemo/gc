@@ -9,7 +9,7 @@ import math
 
 
 class PrepareData():
-    def _jaccard_sim(self, data: pd.DataFrame) -> pd.DataFrame:
+    def jaccard_sim(self, data: pd.DataFrame) -> pd.DataFrame:
         nodes = data[data['source'] == data['target']].copy()
         nodes.drop(['target'], axis=1, inplace=True)
         nodes.columns = ['node', 'node_weigh']
@@ -22,7 +22,7 @@ class PrepareData():
 
         return data
 
-    def _sim_nodes_detector(self, data_sim: pd.DataFrame) -> pd.DataFrame:
+    def sim_nodes_detector(self, data_sim: pd.DataFrame) -> pd.DataFrame:
         sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
         sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
         sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
@@ -40,7 +40,7 @@ class PrepareData():
 
         return data_sim
 
-    def _longest_path(self, sim):
+    def longest_path(self, sim):
         sim_neg = -1 * sim
         G_neg = nx.from_pandas_adjacency(sim_neg)
         G_neg.remove_edges_from(nx.selfloop_edges(G_neg))
@@ -62,7 +62,7 @@ class PrepareData():
 
         return G
 
-    def _prune_max(self, sim: pd.DataFrame, weight='weight') -> pd.DataFrame:
+    def prune_max(self, sim: pd.DataFrame, weight='weight') -> pd.DataFrame:
         max_val = sim.max()
         max_ind = sim.idxmax()
 
@@ -100,7 +100,7 @@ class PrepareData():
 
         return G_p
 
-    def _scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
+    def scores_degree(self, G: nx.Graph, weight='weight', method='degree', sub_method='degree') -> pd.DataFrame:
         print(f'calculate degree for graph')
         if method == 'eig':
             degrees_df = nx.eigenvector_centrality(G, weight=weight)
@@ -162,7 +162,7 @@ class PrepareData():
 
         return degrees_df
 
-    def _fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='max') -> pd.DataFrame:
+    def fit_nodes(self, sim, labels: pd.DataFrame, scores=pd.DataFrame(), nscore_method='max') -> pd.DataFrame:
         if not scores.empty:
             scores.set_index('node', inplace=True)
         sim = pd.DataFrame(sim)
@@ -211,7 +211,7 @@ class PrepareData():
 
         return predict
 
-    def _adj_matrix(self, G: nx.Graph, weight='weight'):
+    def adj_matrix(self, G: nx.Graph, weight='weight'):
         all_nodes = list(G.nodes)
         sim = nx.to_numpy_array(G, weight=weight)
 
@@ -221,15 +221,15 @@ class PrepareData():
 
         return sim
 
-    def _print_results(self, test_predict: pd.DataFrame, labels: pd.DataFrame):
+    def print_results(self, test_predict: pd.DataFrame, labels: pd.DataFrame):
         test_predict.fillna(-1, inplace=True)
         test_predict = pd.merge(test_predict, labels, how='left', left_index=True, right_index=True)
         test_predict.to_csv('data/all_sample_predict.csv')
         acc = classification_report(test_predict['class'], test_predict['label'], output_dict=False)
         print(acc)
 
-    def _test_graph(self, G: nx.Graph, weight='weight', method='', sub_method='', test_size=None, random_state=None,
-                    label_method='max', n_head_score=1):
+    def test_graph(self, G: nx.Graph, weight='weight', method='', sub_method='', test_size=None, random_state=None,
+                   label_method='max', n_head_score=1):
         pr = PrepareData()
 
         labels = nx.get_node_attributes(G, 'label')
@@ -245,7 +245,7 @@ class PrepareData():
             scores_train = pd.DataFrame()
         else:
             print('calculate scores...')
-            scores_train = pr._scores_degree(G_train, weight, method=method, sub_method=sub_method)
+            scores_train = pr.scores_degree(G_train, weight, method=method, sub_method=sub_method)
 
             scores_train.sort_values(by=['class', 'score'], ascending=False, inplace=True)
             classes = scores_train['class'].unique()
@@ -262,44 +262,10 @@ class PrepareData():
 
         labels.set_index('node', inplace=True)
         # adjacency matrix
-        sim = pr._adj_matrix(G, weight)
+        sim = pr.adj_matrix(G, weight)
 
         sim_test_train = sim.drop(list(X_train.values))
         sim_test_train.drop(columns=list(X_test.values), axis=1, inplace=True)
-        test_predict = pr._fit_nodes(sim_test_train, labels, scores_train, label_method)
+        test_predict = pr.fit_nodes(sim_test_train, labels, scores_train, label_method)
 
-        pr._print_results(test_predict, labels)
-
-    def _encode_onehot(self, labels):
-        classes = set(labels)
-        classes_dict = {c: np.identity(len(classes))[i, :] for i, c in enumerate(classes)}
-        labels_onehot = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
-        return labels_onehot
-
-    def _load_data(self, path="data/cora/", dataset="cora"):
-        """Load citation network dataset (cora only for now)"""
-        print('Loading {} dataset...'.format(dataset))
-
-        idx_features_labels = np.genfromtxt("{}{}.content".format(path, dataset), dtype=np.dtype(str))
-        features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
-        labels = self._encode_onehot(idx_features_labels[:, -1])
-        samples = labels[np.random.choice(labels.shape[0], 140, replace=False)]
-
-        # build graph
-        idx = np.array(idx_features_labels[:, 0], dtype=np.int32)
-        idx_map = {j: i for i, j in enumerate(idx)}
-        edges_unordered = np.genfromtxt("{}{}.cites".format(path, dataset), dtype=np.int32)
-        edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
-                         dtype=np.int32).reshape(edges_unordered.shape)
-        adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
-                            shape=(labels.shape[0], labels.shape[0]), dtype=np.float32)
-
-        # build symmetric adjacency matrix
-        adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
-
-        # features = normalize_features(features)
-        # adj = normalize_adj(adj + sp.eye(adj.shape[0]))
-
-        print('Dataset has {} nodes, {} edges, {} features.'.format(adj.shape[0], edges.shape[0], features.shape[1]))
-
-        return features.todense(), adj, samples, labels
+        pr.print_results(test_predict, labels)

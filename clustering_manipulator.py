@@ -18,7 +18,7 @@ class ClusteringManipulator:
     def clustering_matrix(self, G, sim=pd.DataFrame(), noise_deletion=True):
         pr = PrepareData()
         if sim.empty:
-            sim = pr._adj_matrix(G)
+            sim = pr.adj_matrix(G)
         dis = 1 - sim
 
         if noise_deletion:
