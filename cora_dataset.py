@@ -70,7 +70,7 @@ def prepare_data():
     data_sim = pr.jaccard_sim(graph)
     if delete_similar_data:
         print('delete similar data...')
-        data_sim = pr.sim_nodes_detector(data_sim)
+        data_sim, sim_df = pr.sim_nodes_detector(data_sim)
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)

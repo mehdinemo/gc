@@ -26,7 +26,7 @@ class ClusteringManipulator:
 
             # Remove Noises from Graph
             noise_nodes = np.where(dbs.labels_ == -1)[0]
-            # noise_nodes = dis.index[noise_nodes]
+            noise_nodes = dis.index[noise_nodes]
             G.remove_nodes_from(noise_nodes)
 
         partitions = community.best_partition(G)

@@ -457,7 +457,7 @@ def main():
     method = 'degree'
     sub_method = 'degree'
     # degree | eig
-    delete_similar_data = False
+    delete_similar_data = True
     test = True
     # True | False
     label_method = 'max'
@@ -478,7 +478,10 @@ def main():
 
     data['source'] = data['source'].astype('int64')
     data['target'] = data['target'].astype('int64')
-    train['id'] = train['id'].astype("Int64").astype(str)
+
+    data.drop(data.loc[data['source'] > data['target']].index.tolist(), inplace=True)
+
+    train['id'] = train['id'].astype("Int64")
 
     train.rename(columns={'target': 'class'}, inplace=True)
     print('data loaded')
@@ -486,10 +489,10 @@ def main():
     data_sim = pr.jaccard_sim(data)
     if delete_similar_data:
         print('delete similar data...')
-        data_sim = pr.sim_nodes_detector(data_sim)
+        data_sim, sim_dic = pr.sim_nodes_detector(data_sim)
 
-    data_sim['source'] = data_sim['source'].astype(str)
-    data_sim['target'] = data_sim['target'].astype(str)
+    # data_sim['source'] = data_sim['source'].astype(str)
+    # data_sim['target'] = data_sim['target'].astype(str)
 
     print('creating graph...')
     G = nx.from_pandas_edgelist(data_sim, source='source', target='target', edge_attr=True)

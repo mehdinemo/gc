@@ -19,48 +19,28 @@ class PrepareData():
 
         data['jaccard_sim'] = data['weight'] / (data['node_weigh_x'] + data['node_weigh_y'] - data['weight'])
         data.drop(data.columns.difference(['source', 'target', 'jaccard_sim']), axis=1, inplace=True)
-
+        data = data[data['source'] != data['target']]
         return data
 
     def sim_nodes_detector(self, data_sim: pd.DataFrame) -> pd.DataFrame:
-        sim_nodes = data_sim[data_sim['jaccard_sim'] == 1]
-        sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
+        sim_nodes = data_sim[(data_sim['jaccard_sim'] == 1) & (data_sim['source'] != data_sim['target'])]
+        # sim_nodes = sim_nodes[sim_nodes['source'] != sim_nodes['target']]
         sim_nodes = sim_nodes.groupby('source')['target'].apply(list)
 
         sim_nodes = pd.DataFrame(sim_nodes)
-        sim_nodes['is_similar'] = 0
+        slist = []
+        sim_dic = {}
+        for index, row in sim_nodes.iterrows():
+            if not index in slist:
+                for s in row['target']:
+                    sim_dic.update({s: index})
 
-        for row in sim_nodes.itertuples():
-            if row.is_similar == 0:
-                sim_nodes.at[row.target, 'is_similar'] = 1
+            slist.extend(row['target'])
 
-        sim_nodes = sim_nodes[sim_nodes['is_similar'] == 1]
-
-        data_sim = data_sim[(~data_sim['source'].isin(sim_nodes.index)) & (~data_sim['target'].isin(sim_nodes.index))]
-
-        return data_sim
-
-    def longest_path(self, sim):
-        sim_neg = -1 * sim
-        G_neg = nx.from_pandas_adjacency(sim_neg)
-        G_neg.remove_edges_from(nx.selfloop_edges(G_neg))
-
-        lp = nx.shortest_path(G_neg)
-        lp = next(iter(lp.values()))
-        longest_past = list(lp.keys())
-
-        G = nx.Graph()
-        for i, v in enumerate(longest_past):
-            if i + 1 < len(longest_past):
-                target = longest_past[i + 1]
-                weight = sim.loc[v][target]
-                G.add_edge(v, target, weight=weight)
-            else:
-                target = longest_past[0]
-                weight = sim.loc[v][target]
-                G.add_edge(v, target, weight=weight)
-
-        return G
+        data_sim = data_sim[(~data_sim['source'].isin(slist)) & (~data_sim['target'].isin(slist))]
+        sim_df = pd.DataFrame.from_dict(sim_dic, orient='index')
+        sim_df.columns = ['id']
+        return data_sim, sim_df
 
     def prune_max(self, sim: pd.DataFrame, weight='weight') -> pd.DataFrame:
         max_val = sim.max()
@@ -77,7 +57,7 @@ class PrepareData():
             cc_list.append(c)
 
         check_nodes = cc_list.pop(0)
-        pbar = tqdm(total= len(G_p) + 1)
+        pbar = tqdm(total=len(G_p) + 1)
         while len(check_nodes) < len(G_p):
             tmp = sim.loc[check_nodes].drop(check_nodes, axis=1)
             max_ind = tmp.idxmax(axis=1)
